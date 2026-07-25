@@ -16,7 +16,7 @@ import {
   DocumentData,
   QuerySnapshot,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
 import { handleFirestoreError, OperationType } from "./firestoreError";
 
 // Types for Firestore Data
@@ -359,6 +359,40 @@ export interface UserProfile {
 export async function fetchUserProfile(
   uid: string,
 ): Promise<UserProfile | null> {
+  if (!auth.currentUser || uid.startsWith("guest_")) {
+    const localGuestStr = localStorage.getItem("fahy_local_guest");
+    const localStateStr = localStorage.getItem(`fahy_guest_state_${uid}`);
+    let localState: any = {};
+    if (localStateStr) {
+      try {
+        localState = JSON.parse(localStateStr);
+      } catch (e) {}
+    }
+    let guestUser: any = {};
+    if (localGuestStr) {
+      try {
+        guestUser = JSON.parse(localGuestStr);
+      } catch (e) {}
+    }
+    return {
+      uid,
+      username: guestUser.displayName || "Guest Fahy Explorer",
+      email: "guest@fahy.local",
+      coins: localState.coins ?? 850,
+      xp: localState.xp ?? 140,
+      level: localState.level ?? 2,
+      points: localState.points ?? 1500,
+      badges: localState.badges ?? ["culture.badge.gen_0"],
+      equippedBadge: localState.equippedBadge ?? "",
+      equippedFahy: localState.equippedFahy ?? "",
+      photoURL:
+        guestUser.photoURL ||
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      bio: localState.bio || "Fahy Explorer exploring urban ecology.",
+      locationPreference: localState.locationPreference || "Fa Hui Park",
+    };
+  }
+
   const docRef = doc(db, "users", uid);
   try {
     const snap = await getDoc(docRef);
@@ -395,6 +429,13 @@ export function subscribeToUserProfile(
   onUpdate: (profile: UserProfile) => void,
   onError?: (err: Error) => void,
 ): () => void {
+  if (!auth.currentUser || uid.startsWith("guest_")) {
+    fetchUserProfile(uid).then((p) => {
+      if (p) onUpdate(p);
+    });
+    return () => {};
+  }
+
   const docRef = doc(db, "users", uid);
   return onSnapshot(
     docRef,
@@ -436,6 +477,20 @@ export async function updateUserProfile(
   uid: string,
   profile: Partial<Omit<UserProfile, "uid">>,
 ): Promise<void> {
+  if (!auth.currentUser || uid.startsWith("guest_")) {
+    const currentKey = `fahy_guest_state_${uid}`;
+    const existing = localStorage.getItem(currentKey);
+    let currentData = {};
+    if (existing) {
+      try {
+        currentData = JSON.parse(existing);
+      } catch (e) {}
+    }
+    const merged = { ...currentData, ...profile };
+    localStorage.setItem(currentKey, JSON.stringify(merged));
+    return;
+  }
+
   const docRef = doc(db, "users", uid);
   try {
     await updateDoc(docRef, profile);

@@ -194,6 +194,7 @@ interface AuthContextType {
   loading: boolean;
   logout: () => Promise<void>;
   updateProfileData: (displayName: string, photoURL: string) => Promise<void>;
+  loginAsGuest: () => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -209,7 +210,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        setLoading(false);
       } else {
         const localGuest = localStorage.getItem("fahy_local_guest");
         if (localGuest) {
@@ -221,25 +221,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setUser(null);
         }
-        setLoading(false);
       }
-
-      const isAuthRoute =
-        routerState.location.pathname === "/login" ||
-        routerState.location.pathname === "/signup" ||
-        routerState.location.pathname === "/reset-password";
-
-      const hasUser = currentUser || localStorage.getItem("fahy_local_guest");
-
-      if (!hasUser && !isAuthRoute) {
-        navigate({ to: "/login" });
-      } else if (hasUser && isAuthRoute) {
-        navigate({ to: "/" });
-      }
+      setLoading(false);
     });
 
     return unsubscribe;
-  }, [navigate, routerState.location.pathname]);
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+
+    const pathname = routerState.location.pathname;
+    const isAuthRoute =
+      pathname === "/login" ||
+      pathname === "/signup" ||
+      pathname === "/reset-password";
+
+    if (!user && !isAuthRoute) {
+      navigate({ to: "/login" });
+    } else if (user && isAuthRoute) {
+      navigate({ to: "/" });
+    }
+  }, [user, loading, routerState.location.pathname, navigate]);
+
+  const loginAsGuest = async () => {
+    let guestUid = localStorage.getItem("fahy_local_guest_uid");
+    if (!guestUid) {
+      guestUid = "guest_" + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem("fahy_local_guest_uid", guestUid);
+    }
+    const guestUser = {
+      uid: guestUid,
+      displayName: "Guest Fahy Explorer",
+      email: "guest@fahy.local",
+      photoURL:
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      isAnonymous: true,
+    };
+    localStorage.setItem("fahy_local_guest", JSON.stringify(guestUser));
+    setUser(guestUser);
+    return guestUser;
+  };
 
   const logout = async () => {
     await signOut(auth);
@@ -291,7 +313,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, updateProfileData }}>
+    <AuthContext.Provider
+      value={{ user, loading, logout, updateProfileData, loginAsGuest }}
+    >
       {loading ? <RetroLoadingScreen /> : children}
     </AuthContext.Provider>
   );

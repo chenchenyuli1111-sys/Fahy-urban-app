@@ -39,19 +39,19 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && isOwner(userId)
         && isValidString(incoming().username, 100)
-        && isValidString(incoming().email, 150)
+        && (!('email' in incoming()) || incoming().email == null || isValidString(incoming().email, 150))
         && incoming().coins is int
         && incoming().xp is int
         && incoming().level is int
         && incoming().points is int;
 
       allow update: if isSignedIn() && isOwner(userId)
-        && incoming().email == existing().email // Email cannot be mutated
-        && isValidString(incoming().username, 100)
-        && incoming().coins is int
-        && incoming().xp is int
-        && incoming().level is int
-        && incoming().points is int
+        && (!('email' in existing()) || !('email' in incoming()) || incoming().email == existing().email || existing().email == null)
+        && (!('username' in incoming()) || isValidString(incoming().username, 100))
+        && (!('coins' in incoming()) || incoming().coins is int)
+        && (!('xp' in incoming()) || incoming().xp is int)
+        && (!('level' in incoming()) || incoming().level is int)
+        && (!('points' in incoming()) || incoming().points is int)
         && (!('equippedBadge' in incoming()) || incoming().equippedBadge == null || isValidString(incoming().equippedBadge, 100))
         && (!('equippedFahy' in incoming()) || incoming().equippedFahy == null || isValidString(incoming().equippedFahy, 100))
         && (!('bio' in incoming()) || isValidString(incoming().bio, 500))
@@ -65,8 +65,7 @@ service cloud.firestore {
         allow create: if isSignedIn() && isOwner(userId)
           && incoming().amount is int
           && isValidString(incoming().type, 20)
-          && isValidString(incoming().reason, 200)
-          && incoming().timestamp != null;
+          && isValidString(incoming().reason, 200);
         allow update, delete: if false; // Transactions are strictly immutable once written
       }
     }
@@ -100,8 +99,7 @@ service cloud.firestore {
         && isValidString(incoming().name, 100)
         && isValidString(incoming().description, 1000)
         && (incoming().lat is float || incoming().lat is int)
-        && (incoming().lng is float || incoming().lng is int)
-        && incoming().timestamp != null;
+        && (incoming().lng is float || incoming().lng is int);
 
       allow update: if isSignedIn()
         && (

@@ -1,9 +1,10 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n";
 import { useState, useRef } from "react";
 import { Camera } from "lucide-react";
 import { auth, db, storage } from "@/lib/firebase";
+import { useAuth } from "@/lib/AuthContext";
 import {
   createUserWithEmailAndPassword,
   updateProfile,
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/signup")({
 function SignUp() {
   const { k } = useLang();
   const navigate = useNavigate();
+  const { loginAsGuest } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
@@ -63,21 +65,25 @@ function SignUp() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user document exists, if not create it
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
 
-      if (!docSnap.exists()) {
-        await setDoc(docRef, {
-          username:
-            user.displayName || user.email?.split("@")[0] || "Eco Explorer",
-          photoURL: user.photoURL || "",
-          createdAt: new Date().toISOString(),
-          points: 0,
-          coins: 0,
-          xp: 0,
-          level: 1,
-        });
+        if (!docSnap.exists()) {
+          await setDoc(docRef, {
+            username:
+              user.displayName || user.email?.split("@")[0] || "Eco Explorer",
+            email: user.email || "",
+            photoURL: user.photoURL || "",
+            createdAt: new Date().toISOString(),
+            points: 0,
+            coins: 0,
+            xp: 0,
+            level: 1,
+          });
+        }
+      } catch (dbErr) {
+        console.warn("Firestore profile sync warning on social login:", dbErr);
       }
 
       navigate({ to: "/" });
@@ -92,7 +98,7 @@ function SignUp() {
         );
       } else if (
         err.code === "auth/configuration-not-found" ||
-        err.message.includes("configuration")
+        err.message?.includes("configuration")
       ) {
         setError(
           `${providerName.charAt(0).toUpperCase() + providerName.slice(1)} login is not enabled. You must configure this provider in your Firebase Console Authentication settings.`,
@@ -109,27 +115,42 @@ function SignUp() {
     setLoading(true);
     setError("");
     try {
-      const result = await signInAnonymously(auth);
-      const user = result.user;
+      try {
+        const result = await signInAnonymously(auth);
+        const user = result.user;
+        if (user) {
+          try {
+            const docRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(docRef);
 
-      // Check if user document exists, if not create it
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
-
-      if (!docSnap.exists()) {
-        await setDoc(docRef, {
-          username: "Guest Fahy Explorer",
-          photoURL:
-            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-          createdAt: new Date().toISOString(),
-          points: 1500,
-          coins: 850,
-          xp: 140,
-          level: 2,
-          badges: ["culture.badge.gen_0"],
-        });
+            if (!docSnap.exists()) {
+              await setDoc(docRef, {
+                username: "Guest Fahy Explorer",
+                email: "guest@fahy.local",
+                photoURL:
+                  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+                createdAt: new Date().toISOString(),
+                points: 1500,
+                coins: 850,
+                xp: 140,
+                level: 2,
+                badges: ["culture.badge.gen_0"],
+              });
+            }
+          } catch (dbErr) {
+            console.warn("Firestore user sync warning on guest login:", dbErr);
+          }
+          navigate({ to: "/" });
+          return;
+        }
+      } catch (authErr: any) {
+        console.warn(
+          "Firebase Anonymous Auth unavailable, using local guest session:",
+          authErr,
+        );
       }
 
+      await loginAsGuest();
       navigate({ to: "/" });
     } catch (err: any) {
       console.error("Guest login error:", err);
@@ -154,25 +175,38 @@ function SignUp() {
 
       let photoURL = "";
       if (fileToUpload) {
-        const storageRef = ref(storage, `profiles/${user.uid}`);
-        await uploadBytes(storageRef, fileToUpload);
-        photoURL = await getDownloadURL(storageRef);
+        try {
+          const storageRef = ref(storage, `profiles/${user.uid}`);
+          await uploadBytes(storageRef, fileToUpload);
+          photoURL = await getDownloadURL(storageRef);
+        } catch (storageErr) {
+          console.warn("Storage upload warning:", storageErr);
+        }
       }
 
-      await updateProfile(user, {
-        displayName: username,
-        photoURL,
-      });
+      try {
+        await updateProfile(user, {
+          displayName: username,
+          photoURL,
+        });
+      } catch (profileErr) {
+        console.warn("Update profile warning:", profileErr);
+      }
 
-      await setDoc(doc(db, "users", user.uid), {
-        username,
-        photoURL,
-        createdAt: new Date().toISOString(),
-        points: 0,
-        coins: 0,
-        xp: 0,
-        level: 1,
-      });
+      try {
+        await setDoc(doc(db, "users", user.uid), {
+          username,
+          email: user.email || email || "",
+          photoURL,
+          createdAt: new Date().toISOString(),
+          points: 0,
+          coins: 0,
+          xp: 0,
+          level: 1,
+        });
+      } catch (dbErr) {
+        console.warn("Firestore setDoc warning on signup:", dbErr);
+      }
 
       navigate({ to: "/" });
     } catch (err: any) {
@@ -361,9 +395,9 @@ function SignUp() {
         <div className="mt-8 text-center pb-8">
           <p className="text-xs text-forest/60">
             Already have an account?{" "}
-            <a href="/login" className="font-bold text-forest underline">
+            <Link to="/login" className="font-bold text-forest underline">
               Log in
-            </a>
+            </Link>
           </p>
         </div>
       </section>

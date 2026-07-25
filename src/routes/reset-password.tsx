@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n";
 import { ArrowLeft } from "lucide-react";
@@ -40,9 +40,9 @@ function ResetPassword() {
   return (
     <AppShell hideNav>
       <header className="px-5 pt-10 pb-4 relative">
-        <a href="/login" className="absolute top-10 left-5 text-forest/50">
+        <Link to="/login" className="absolute top-10 left-5 text-forest/50">
           <ArrowLeft className="w-6 h-6" />
-        </a>
+        </Link>
         <h1 className="font-display font-bold text-3xl tracking-tight mt-10">
           Reset Password
         </h1>

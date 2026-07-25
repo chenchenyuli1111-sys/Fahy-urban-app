@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n";
 import { useState } from "react";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { useAuth } from "@/lib/AuthContext";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -12,7 +13,6 @@ import {
   signInAnonymously,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { FcGoogle } from "react-icons/fc";
 import { Sparkles } from "lucide-react";
 
@@ -26,6 +26,7 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const { k } = useLang();
   const navigate = useNavigate();
+  const { loginAsGuest } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,21 +50,25 @@ function Login() {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
 
-      // Check if user document exists, if not create it (in case they login without signing up first)
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
 
-      if (!docSnap.exists()) {
-        await setDoc(docRef, {
-          username:
-            user.displayName || user.email?.split("@")[0] || "Eco Explorer",
-          photoURL: user.photoURL || "",
-          createdAt: new Date().toISOString(),
-          points: 0,
-          coins: 0,
-          xp: 0,
-          level: 1,
-        });
+        if (!docSnap.exists()) {
+          await setDoc(docRef, {
+            username:
+              user.displayName || user.email?.split("@")[0] || "Eco Explorer",
+            email: user.email || "",
+            photoURL: user.photoURL || "",
+            createdAt: new Date().toISOString(),
+            points: 0,
+            coins: 0,
+            xp: 0,
+            level: 1,
+          });
+        }
+      } catch (dbErr) {
+        console.warn("Firestore user check warning on social login:", dbErr);
       }
 
       navigate({ to: "/" });
@@ -78,7 +83,7 @@ function Login() {
         );
       } else if (
         err.code === "auth/configuration-not-found" ||
-        err.message.includes("configuration")
+        err.message?.includes("configuration")
       ) {
         setError(
           `${providerName.charAt(0).toUpperCase() + providerName.slice(1)} login is not enabled. You must configure this provider in your Firebase Console Authentication settings.`,
@@ -95,55 +100,43 @@ function Login() {
     setLoading(true);
     setError("");
     try {
-      let user;
       try {
         const result = await signInAnonymously(auth);
-        user = result.user;
+        const user = result.user;
+        if (user) {
+          try {
+            const docRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(docRef);
+
+            if (!docSnap.exists()) {
+              await setDoc(docRef, {
+                username: "Guest Fahy Explorer",
+                email: "guest@fahy.local",
+                photoURL:
+                  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+                createdAt: new Date().toISOString(),
+                points: 1500,
+                coins: 850,
+                xp: 140,
+                level: 2,
+                badges: ["culture.badge.gen_0"],
+              });
+            }
+          } catch (dbErr) {
+            console.warn("Firestore user sync warning on guest login:", dbErr);
+          }
+          navigate({ to: "/" });
+          return;
+        }
       } catch (authErr: any) {
         console.warn(
-          "Firebase Anonymous Auth failed, falling back to local guest:",
+          "Firebase Anonymous Auth unavailable, using local guest session:",
           authErr,
         );
-        let guestUid = localStorage.getItem("fahy_local_guest_uid");
-        if (!guestUid) {
-          guestUid = "guest_" + Math.random().toString(36).substring(2, 15);
-          localStorage.setItem("fahy_local_guest_uid", guestUid);
-        }
-        const guestUser = {
-          uid: guestUid,
-          displayName: "Guest Fahy Explorer",
-          email: null,
-          photoURL:
-            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-          isAnonymous: true,
-        };
-        localStorage.setItem("fahy_local_guest", JSON.stringify(guestUser));
-        user = guestUser;
       }
 
-      // Check if user document exists, if not create it
-      const docRef = doc(db, "users", user.uid);
-      const docSnap = await getDoc(docRef);
-
-      if (!docSnap.exists()) {
-        await setDoc(docRef, {
-          username: "Guest Fahy Explorer",
-          photoURL:
-            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-          createdAt: new Date().toISOString(),
-          points: 1500,
-          coins: 850,
-          xp: 140,
-          level: 2,
-          badges: ["culture.badge.gen_0"],
-        });
-      }
-
-      if (user.uid.startsWith("guest_")) {
-        window.location.href = "/";
-      } else {
-        navigate({ to: "/" });
-      }
+      await loginAsGuest();
+      navigate({ to: "/" });
     } catch (err: any) {
       console.error("Guest login error:", err);
       setError(err.message || "Failed to log in as Guest.");
@@ -158,12 +151,46 @@ function Login() {
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+      const user = userCredential.user;
+
+      try {
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          await setDoc(docRef, {
+            username:
+              user.displayName || user.email?.split("@")[0] || "Eco Explorer",
+            email: user.email || email || "",
+            photoURL: user.photoURL || "",
+            createdAt: new Date().toISOString(),
+            points: 100,
+            coins: 50,
+            xp: 0,
+            level: 1,
+          });
+        }
+      } catch (dbErr) {
+        console.warn("Firestore profile sync warning on login:", dbErr);
+      }
+
       navigate({ to: "/" });
     } catch (err: any) {
       console.error("Login error:", err);
       if (err.code === "auth/operation-not-allowed") {
         setError("EMAIL_NOT_ENABLED");
+      } else if (
+        err.code === "auth/invalid-credential" ||
+        err.code === "auth/user-not-found" ||
+        err.code === "auth/wrong-password"
+      ) {
+        setError(
+          "Invalid email or password. If you haven't created an account yet, click 'Sign up' below or tap 'Quick Demo / Guest Access' for instant login!",
+        );
       } else {
         setError(err.message || "Failed to log in.");
       }
@@ -258,12 +285,12 @@ function Login() {
           </div>
 
           <div className="flex justify-end">
-            <a
-              href="/reset-password"
+            <Link
+              to="/reset-password"
               className="text-xs font-bold text-sage-deep"
             >
               Forgot Password?
-            </a>
+            </Link>
           </div>
 
           <button
@@ -310,9 +337,9 @@ function Login() {
         <div className="mt-8 text-center pb-8">
           <p className="text-xs text-forest/60">
             Don't have an account?{" "}
-            <a href="/signup" className="font-bold text-forest underline">
+            <Link to="/signup" className="font-bold text-forest underline">
               Sign up
-            </a>
+            </Link>
           </p>
         </div>
       </section>
