@@ -189,10 +189,12 @@ export function UserDashboard() {
 
   // Calculate current and next evolution stages
   const currentStage =
+    stages.find((s) => s.id === profile.equippedFahy) ||
     stages
       .slice()
       .reverse()
-      .find((s) => profile.level >= s.level) || stages[0];
+      .find((s) => profile.level >= s.level) ||
+    stages[0];
   const nextStage = stages.find((s) => s.level > profile.level);
   const xpNeeded = nextStage ? nextStage.level * 100 : null;
   const progress = xpNeeded

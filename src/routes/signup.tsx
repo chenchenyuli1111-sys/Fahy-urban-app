@@ -11,10 +11,12 @@ import {
   GoogleAuthProvider,
   OAuthProvider,
   FacebookAuthProvider,
+  signInAnonymously,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { FcGoogle } from "react-icons/fc";
+import { Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -98,6 +100,40 @@ function SignUp() {
       } else {
         setError(err.message || `Failed to sign in with ${providerName}.`);
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await signInAnonymously(auth);
+      const user = result.user;
+
+      // Check if user document exists, if not create it
+      const docRef = doc(db, "users", user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        await setDoc(docRef, {
+          username: "Guest Fahy Explorer",
+          photoURL:
+            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+          createdAt: new Date().toISOString(),
+          points: 1500,
+          coins: 850,
+          xp: 140,
+          level: 2,
+          badges: ["culture.badge.gen_0"],
+        });
+      }
+
+      navigate({ to: "/" });
+    } catch (err: any) {
+      console.error("Guest login error:", err);
+      setError(err.message || "Failed to log in as Guest.");
     } finally {
       setLoading(false);
     }
@@ -302,6 +338,16 @@ function SignUp() {
         </div>
 
         <div className="mt-6 flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={handleGuestLogin}
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-peach to-fahy-yellow text-forest rounded-full py-3.5 font-extrabold flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-sm hover:opacity-95 disabled:opacity-70"
+          >
+            <Sparkles className="w-4 h-4 fill-forest" /> Quick Demo / Guest
+            Access
+          </button>
+
           <button
             type="button"
             onClick={() => handleSocialLogin("google")}

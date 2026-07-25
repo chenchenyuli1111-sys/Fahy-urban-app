@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, doc, getDocFromServer } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -19,3 +19,20 @@ export const db = getFirestore(
   "ai-studio-fahyurbanpulse-cc7f8170-5d4a-41bc-a181-be141cf6351a",
 );
 export const storage = getStorage(app);
+
+// Test Firestore connection on initial boot as required by rules
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, "test", "connection"));
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.includes("the client is offline")
+    ) {
+      console.warn(
+        "Firestore test connection warning: Client is offline. Please check network/config.",
+      );
+    }
+  }
+}
+testConnection();

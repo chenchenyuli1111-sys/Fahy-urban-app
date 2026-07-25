@@ -14,6 +14,7 @@ import { chatWithFahyFn } from "@/lib/gemini";
 interface Message {
   role: "user" | "model";
   content: string;
+  sources?: { uri: string; title: string }[];
 }
 
 export function FahyChat() {
@@ -66,7 +67,14 @@ export function FahyChat() {
         },
       });
 
-      setMessages([...newMessages, { role: "model", content: res.response }]);
+      setMessages([
+        ...newMessages,
+        {
+          role: "model",
+          content: res.response,
+          sources: res.sources,
+        },
+      ]);
     } catch (err: any) {
       console.error(err);
       setMessages([
@@ -174,7 +182,27 @@ export function FahyChat() {
                       : "bg-white text-forest/80 border border-black/5 rounded-tl-xs shadow-xs"
                   }`}
                 >
-                  {m.content}
+                  <div>{m.content}</div>
+                  {m.sources && m.sources.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-black/5 flex flex-col gap-1">
+                      <p className="text-[9px] font-bold text-forest/40 uppercase tracking-wider">
+                        Sources:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {m.sources.map((src, idx) => (
+                          <a
+                            key={idx}
+                            href={src.uri}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[9px] bg-slate-100 hover:bg-slate-200 text-forest/70 px-1.5 py-0.5 rounded flex items-center gap-0.5 transition-colors border border-black/[0.02]"
+                          >
+                            <span>{src.title}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

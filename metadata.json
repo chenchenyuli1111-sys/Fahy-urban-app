@@ -1,6 +1,6 @@
 {
   "name": "Fahy Urban Pulse",
   "description": "Urban Pulse application migrated from GitHub.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera", "microphone", "geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  redirect,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
@@ -83,17 +84,43 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     head: () => ({
       meta: [
         { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title: "Lovable App" },
-        { name: "description", content: "Lovable Generated Project" },
-        { name: "author", content: "Lovable" },
-        { property: "og:title", content: "Lovable App" },
-        { property: "og:description", content: "Lovable Generated Project" },
+        {
+          name: "viewport",
+          content:
+            "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover",
+        },
+        { title: "Fahy Urban Pulse" },
+        {
+          name: "description",
+          content:
+            "Live neighborhood pulse, eco-challenges, and rewards — guided by Fahy.",
+        },
+        { name: "author", content: "Fahy Hub" },
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        {
+          name: "apple-mobile-web-app-status-bar-style",
+          content: "black-translucent",
+        },
+        { name: "apple-mobile-web-app-title", content: "Fahy Hub" },
+        { name: "theme-color", content: "#1b4332" },
+        { property: "og:title", content: "Fahy Urban Pulse" },
+        {
+          property: "og:description",
+          content:
+            "Live neighborhood pulse, eco-challenges, and rewards — guided by Fahy.",
+        },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary" },
-        { name: "twitter:site", content: "@Lovable" },
       ],
       links: [
+        {
+          rel: "manifest",
+          href: "/manifest.json",
+        },
+        {
+          rel: "apple-touch-icon",
+          href: "/src/assets/fahy-mascot.png",
+        },
         {
           rel: "stylesheet",
           href: appCss,

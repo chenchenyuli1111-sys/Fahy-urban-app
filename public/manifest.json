@@ -1,0 +1,19 @@
+{
+  "name": "Fahy Urban Pulse",
+  "short_name": "FahyHub",
+  "description": "Live neighborhood pulse, eco-challenges, and rewards — guided by Fahy.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1b4332",
+  "theme_color": "#1b4332",
+  "orientation": "portrait-primary",
+  "categories": ["utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "/src/assets/fahy-mascot.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

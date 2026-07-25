@@ -2,33 +2,155 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Global Safety Net
+    // ----------------------------------------------------
+    // GLOBAL SAFETY NET
+    // ----------------------------------------------------
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Helper Functions
-    function isSignedIn() { return request.auth != null; }
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
+    // ----------------------------------------------------
+    // HELPER FUNCTIONS (The Pillars of Security)
+    // ----------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    // ----------------------------------------------------
+    // 1. USERS COLLECTION
+    // ----------------------------------------------------
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn() && request.auth.uid == userId;
-      
+      allow create: if isSignedIn() && isOwner(userId)
+        && isValidString(incoming().username, 100)
+        && isValidString(incoming().email, 150)
+        && incoming().coins is int
+        && incoming().xp is int
+        && incoming().level is int
+        && incoming().points is int;
+
+      allow update: if isSignedIn() && isOwner(userId)
+        && incoming().email == existing().email // Email cannot be mutated
+        && isValidString(incoming().username, 100)
+        && incoming().coins is int
+        && incoming().xp is int
+        && incoming().level is int
+        && incoming().points is int
+        && (!('equippedBadge' in incoming()) || incoming().equippedBadge == null || isValidString(incoming().equippedBadge, 100))
+        && (!('equippedFahy' in incoming()) || incoming().equippedFahy == null || isValidString(incoming().equippedFahy, 100))
+        && (!('bio' in incoming()) || isValidString(incoming().bio, 500))
+        && (!('locationPreference' in incoming()) || isValidString(incoming().locationPreference, 150));
+
+      allow delete: if false; // Profiles cannot be deleted to prevent leaderboard corruption
+
+      // Transactions subcollection - IMMUTABLE
       match /transactions/{txId} {
-        allow read, write: if isSignedIn() && request.auth.uid == userId;
+        allow read: if isSignedIn() && isOwner(userId);
+        allow create: if isSignedIn() && isOwner(userId)
+          && incoming().amount is int
+          && isValidString(incoming().type, 20)
+          && isValidString(incoming().reason, 200)
+          && incoming().timestamp != null;
+        allow update, delete: if false; // Transactions are strictly immutable once written
       }
     }
-    
+
+    // ----------------------------------------------------
+    // 2. WORKSHOPS COLLECTION (System Owned)
+    // ----------------------------------------------------
     match /workshops/{workshopId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow create, delete: if false; // Only system seeded or admin
+      allow update: if isSignedIn()
+        && incoming().title == existing().title
+        && incoming().org == existing().org
+        && incoming().reward == existing().reward
+        && incoming().location == existing().location
+        && incoming().category == existing().category
+        && incoming().date == existing().date
+        && incoming().spots == existing().spots - 1
+        && incoming().participants.hasAll(existing().participants)
+        && incoming().participants.size() == existing().participants.size() + 1
+        && request.auth.uid in incoming().participants;
     }
-    
+
+    // ----------------------------------------------------
+    // 3. REPORTS COLLECTION (Eco-reports)
+    // ----------------------------------------------------
     match /reports/{reportId} {
-      allow read, write: if true;
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && incoming().userId == request.auth.uid
+        && isValidString(incoming().name, 100)
+        && isValidString(incoming().description, 1000)
+        && (incoming().lat is float || incoming().lat is int)
+        && (incoming().lng is float || incoming().lng is int)
+        && incoming().timestamp != null;
+
+      allow update: if isSignedIn()
+        && (
+          // Author can edit descriptions or tags, but cannot spoof their user ID
+          (existing().userId == request.auth.uid && incoming().userId == request.auth.uid)
+          ||
+          // Anyone can mark a report as restored or verified to promote collaboration
+          (incoming().restored == true && incoming().userId == existing().userId)
+        );
+
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    // ----------------------------------------------------
+    // 4. METRICS COLLECTION (Telemetry - Static/Read-Only)
+    // ----------------------------------------------------
+    match /metrics/{metricId} {
+      allow read: if isSignedIn();
+      allow write: if false; // Strictly static telemetry; write is server-side/admin only
+    }
+
+    // ----------------------------------------------------
+    // 5. INSIGHTS COLLECTION
+    // ----------------------------------------------------
+    match /insights/{insightId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && incoming().likes == 0
+        && isValidString(incoming().title, 200)
+        && isValidString(incoming().summary, 500)
+        && isValidString(incoming().content, 5000)
+        && isValidString(incoming().author, 100);
+
+      allow update: if isSignedIn()
+        && (
+          // Standard liking: only 'likes' field is incremented by exactly 1
+          (
+            incoming().likes == existing().likes + 1
+            && incoming().title == existing().title
+            && incoming().summary == existing().summary
+            && incoming().content == existing().content
+            && incoming().author == existing().author
+          )
+          ||
+          // Author edit
+          (incoming().author == existing().author)
+        );
+
+      allow delete: if false;
     }
   }
 }

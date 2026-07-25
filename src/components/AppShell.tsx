@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { BottomNav } from "./BottomNav";
 import { ScatteredFahys, PreloadFahyAssets } from "@/components/fahy/PixelFahy";
 import { Header } from "./Header";
-import { Footer } from "./Footer";
-import { FahyChat } from "./fahy/FahyChat";
+import { GameHUD } from "./fahy/GameHUD";
+import { Toaster } from "@/components/ui/sonner";
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
@@ -11,6 +11,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <PreloadFahyAssets />
       <ScatteredFahys />
       <Header />
+      <GameHUD />
+      <Toaster position="top-center" />
 
       {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto pb-28 md:pb-12 relative overflow-x-hidden animate-fade-in md:px-5">
@@ -18,11 +20,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
-
-      <Footer />
-
-      {/* Interactive Fahy Chatbot */}
-      <FahyChat />
 
       {/* Mobile Bottom Nav */}
       <BottomNav />

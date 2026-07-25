@@ -165,5 +165,14 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    overflow-x: hidden;
+  }
+
+  /* Keep text selection enabled for form inputs and textareas */
+  input,
+  textarea {
+    user-select: text;
   }
 }

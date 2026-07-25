@@ -7,7 +7,7 @@ import tseslint from "typescript-eslint";
 import firebaseRulesPlugin from "@firebase/eslint-plugin-security-rules";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  { ignores: ["dist", ".output", ".vinxi", "temp_repo"] },
   firebaseRulesPlugin.configs["flat/recommended"],
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -39,7 +39,15 @@ export default tseslint.config(
         { allowConstantExport: true },
       ],
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-empty": "off",
     },
   },
   eslintPluginPrettier,
+  {
+    files: ["**/*.rules"],
+    rules: {
+      "prettier/prettier": "off",
+    },
+  },
 );

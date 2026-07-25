@@ -20,6 +20,7 @@ import { Route as LoginRouteImport } from "./routes/login";
 import { Route as LeaderboardRouteImport } from "./routes/leaderboard";
 import { Route as EvolutionRouteImport } from "./routes/evolution";
 import { Route as EcosystemRouteImport } from "./routes/ecosystem";
+import { Route as DashboardRouteImport } from "./routes/dashboard";
 import { Route as CultureRouteImport } from "./routes/culture";
 import { Route as IndexRouteImport } from "./routes/index";
 
@@ -78,6 +79,11 @@ const EcosystemRoute = EcosystemRouteImport.update({
   path: "/ecosystem",
   getParentRoute: () => rootRouteImport,
 } as any);
+const DashboardRoute = DashboardRouteImport.update({
+  id: "/dashboard",
+  path: "/dashboard",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const CultureRoute = CultureRouteImport.update({
   id: "/culture",
   path: "/culture",
@@ -92,6 +98,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/culture": typeof CultureRoute;
+  "/dashboard": typeof DashboardRoute;
   "/ecosystem": typeof EcosystemRoute;
   "/evolution": typeof EvolutionRoute;
   "/leaderboard": typeof LeaderboardRoute;
@@ -107,6 +114,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
   "/culture": typeof CultureRoute;
+  "/dashboard": typeof DashboardRoute;
   "/ecosystem": typeof EcosystemRoute;
   "/evolution": typeof EvolutionRoute;
   "/leaderboard": typeof LeaderboardRoute;
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
   "/culture": typeof CultureRoute;
+  "/dashboard": typeof DashboardRoute;
   "/ecosystem": typeof EcosystemRoute;
   "/evolution": typeof EvolutionRoute;
   "/leaderboard": typeof LeaderboardRoute;
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/culture"
+    | "/dashboard"
     | "/ecosystem"
     | "/evolution"
     | "/leaderboard"
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/culture"
+    | "/dashboard"
     | "/ecosystem"
     | "/evolution"
     | "/leaderboard"
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | "__root__"
     | "/"
     | "/culture"
+    | "/dashboard"
     | "/ecosystem"
     | "/evolution"
     | "/leaderboard"
@@ -186,6 +198,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   CultureRoute: typeof CultureRoute;
+  DashboardRoute: typeof DashboardRoute;
   EcosystemRoute: typeof EcosystemRoute;
   EvolutionRoute: typeof EvolutionRoute;
   LeaderboardRoute: typeof LeaderboardRoute;
@@ -278,6 +291,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof EcosystemRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/dashboard": {
+      id: "/dashboard";
+      path: "/dashboard";
+      fullPath: "/dashboard";
+      preLoaderRoute: typeof DashboardRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/culture": {
       id: "/culture";
       path: "/culture";
@@ -298,6 +318,7 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CultureRoute: CultureRoute,
+  DashboardRoute: DashboardRoute,
   EcosystemRoute: EcosystemRoute,
   EvolutionRoute: EvolutionRoute,
   LeaderboardRoute: LeaderboardRoute,

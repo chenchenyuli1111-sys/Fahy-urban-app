@@ -2,6 +2,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n";
 import { useAppState } from "@/lib/AppState";
+import { gameSounds } from "@/lib/sounds";
 import { CheckCircle2, CircleDashed, ArrowLeft, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
@@ -121,6 +122,7 @@ function Tasks() {
         collectedTasks: updatedCollected,
       });
 
+      gameSounds.play("coin");
       addCoins(reward, `Completed Daily Challenge: ${taskId}`);
       addPoints(reward * 10);
       addXp(reward * 5);

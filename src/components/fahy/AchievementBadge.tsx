@@ -11,7 +11,7 @@ export interface BadgeDetails {
   rarity: "Common" | "Uncommon" | "Rare" | "Legendary";
   description: string;
   requirement: string;
-  color: string;       // Custom hex from design system
+  color: string; // Custom hex from design system
   ribbonColor: string; // Tail color hex
   trackName: string;
 }
@@ -36,7 +36,8 @@ export const BADGES_REGISTRY: Record<string, BadgeDetails> = {
     emoji: "🌱",
     level: "II",
     rarity: "Uncommon",
-    description: "A friendly neighbor who actively participates in community events.",
+    description:
+      "A friendly neighbor who actively participates in community events.",
     requirement: "Reach profile level 2 or higher.",
     color: "#F59E0B",
     ribbonColor: "#D97706",
@@ -100,7 +101,8 @@ export const BADGES_REGISTRY: Record<string, BadgeDetails> = {
     emoji: "👕",
     level: "I",
     rarity: "Common",
-    description: "Your first deep immersion into organic plant fermentation dyes.",
+    description:
+      "Your first deep immersion into organic plant fermentation dyes.",
     requirement: "Visit & Scan Old Town Indigo.",
     color: "#4F46E5",
     ribbonColor: "#3730A3",
@@ -112,7 +114,8 @@ export const BADGES_REGISTRY: Record<string, BadgeDetails> = {
     emoji: "🌀",
     level: "II",
     rarity: "Uncommon",
-    description: "Experienced dye practitioner crafting intricate tie-dye patterns.",
+    description:
+      "Experienced dye practitioner crafting intricate tie-dye patterns.",
     requirement: "Unlock Indigo Starter + Reach level 2 Profile.",
     color: "#4F46E5",
     ribbonColor: "#3730A3",
@@ -124,7 +127,8 @@ export const BADGES_REGISTRY: Record<string, BadgeDetails> = {
     emoji: "🔮",
     level: "III",
     rarity: "Legendary",
-    description: "Preserving ancient deep-indigo shades through flawless craftsmanship.",
+    description:
+      "Preserving ancient deep-indigo shades through flawless craftsmanship.",
     requirement: "Unlock Indigo Artisan + Reach level 4 Profile.",
     color: "#4F46E5",
     ribbonColor: "#3730A3",
@@ -150,7 +154,8 @@ export const BADGES_REGISTRY: Record<string, BadgeDetails> = {
     emoji: "🧺",
     level: "II",
     rarity: "Uncommon",
-    description: "Able to bind and form elegant 3D load-bearing utility baskets.",
+    description:
+      "Able to bind and form elegant 3D load-bearing utility baskets.",
     requirement: "Unlock Weaving Pupil + Reach level 2 Profile.",
     color: "#22C55E",
     ribbonColor: "#15803D",
@@ -162,7 +167,8 @@ export const BADGES_REGISTRY: Record<string, BadgeDetails> = {
     emoji: "🏰",
     level: "III",
     rarity: "Legendary",
-    description: "Crafting architectural bamboo works and premium custom furniture.",
+    description:
+      "Crafting architectural bamboo works and premium custom furniture.",
     requirement: "Unlock Basket Crafter + Reach level 4 Profile.",
     color: "#22C55E",
     ribbonColor: "#15803D",
@@ -226,7 +232,8 @@ export const BADGES_REGISTRY: Record<string, BadgeDetails> = {
     emoji: "💡",
     level: "II",
     rarity: "Uncommon",
-    description: "Integrating delicate illumination and calligraphic paintings.",
+    description:
+      "Integrating delicate illumination and calligraphic paintings.",
     requirement: "Unlock Lantern Builder + Reach level 2 Profile.",
     color: "#EF4444",
     ribbonColor: "#B91C1C",
@@ -238,7 +245,8 @@ export const BADGES_REGISTRY: Record<string, BadgeDetails> = {
     emoji: "🎆",
     level: "III",
     rarity: "Legendary",
-    description: "Acclaimed lantern designer lighting up city-wide celebrations.",
+    description:
+      "Acclaimed lantern designer lighting up city-wide celebrations.",
     requirement: "Unlock Glow Artisan + Reach level 4 Profile.",
     color: "#EF4444",
     ribbonColor: "#B91C1C",
@@ -304,19 +312,19 @@ export const getBadgePath = (lvl: "I" | "II" | "III", cx = 50, cy = 50) => {
 };
 
 export interface AchievementBadgeProps {
-  badgeKey?: string;               // Key to lookup in the registry
-  emoji?: string;                  // Fallback emoji
-  color?: string;                  // Fallback primary color (hex)
-  ribbonColor?: string;            // Fallback ribbon color (hex)
-  level?: "I" | "II" | "III";      // Fallback level
-  unlocked?: boolean;              // Is unlocked? (adds grayscale/lock overlay if false)
-  equipped?: boolean;              // Is equipped? (adds premium pulsing gold border)
+  badgeKey?: string; // Key to lookup in the registry
+  emoji?: string; // Fallback emoji
+  color?: string; // Fallback primary color (hex)
+  ribbonColor?: string; // Fallback ribbon color (hex)
+  level?: "I" | "II" | "III"; // Fallback level
+  unlocked?: boolean; // Is unlocked? (adds grayscale/lock overlay if false)
+  equipped?: boolean; // Is equipped? (adds premium pulsing gold border)
   size?: "xs" | "sm" | "md" | "lg"; // xs=w-8, sm=w-12, md=w-16, lg=w-20
-  showRibbons?: boolean;           // Show ribbon tails hanging below (useful on larger rendering)
-  showTooltip?: boolean;           // Show custom rich hover tooltip
-  className?: string;              // Custom wrapper class
-  onClick?: () => void;            // Custom click handler
-  isOnboarding?: boolean;          // Suppress ribbons if used in onboarding intro card
+  showRibbons?: boolean; // Show ribbon tails hanging below (useful on larger rendering)
+  showTooltip?: boolean; // Show custom rich hover tooltip
+  className?: string; // Custom wrapper class
+  onClick?: () => void; // Custom click handler
+  isOnboarding?: boolean; // Suppress ribbons if used in onboarding intro card
 }
 
 export function AchievementBadge({
@@ -338,13 +346,23 @@ export function AchievementBadge({
 
   // Lookup metadata from registry if key is provided
   const meta = badgeKey ? BADGES_REGISTRY[badgeKey] : null;
-  const emoji = meta ? meta.emoji : (overrideEmoji || "🎖️");
-  const color = meta ? meta.color : (overrideColor || "#F59E0B");
-  const ribbonColor = meta ? meta.ribbonColor : (overrideRibbonColor || "#D97706");
+  const emoji = meta ? meta.emoji : overrideEmoji || "🎖️";
+  const color = meta ? meta.color : overrideColor || "#F59E0B";
+  const ribbonColor = meta
+    ? meta.ribbonColor
+    : overrideRibbonColor || "#D97706";
   const level = meta ? meta.level : overrideLevel;
-  const name = meta ? meta.name : (badgeKey ? badgeKey.split(".").pop() : "Honorary Badge");
-  const description = meta ? meta.description : "An artisan achievement demonstrating dedication to Fa Hui cultural preservation.";
-  const requirement = meta ? meta.requirement : "Acquired through community participation.";
+  const name = meta
+    ? meta.name
+    : badgeKey
+      ? badgeKey.split(".").pop()
+      : "Honorary Badge";
+  const description = meta
+    ? meta.description
+    : "An artisan achievement demonstrating dedication to Fa Hui cultural preservation.";
+  const requirement = meta
+    ? meta.requirement
+    : "Acquired through community participation.";
 
   // Sizing definitions
   const sizeClasses = {
@@ -357,12 +375,19 @@ export function AchievementBadge({
   // Adjust translation of emoji if Level III (due to top star in SVG)
   const isLvl3 = level === "III";
   const emojiTranslate = isLvl3
-    ? size === "xs" ? "translate-y-0.5" : size === "sm" ? "translate-y-1" : "translate-y-1.5"
+    ? size === "xs"
+      ? "translate-y-0.5"
+      : size === "sm"
+        ? "translate-y-1"
+        : "translate-y-1.5"
     : "translate-y-0";
 
   return (
     <div
-      className={cn("relative flex flex-col items-center select-none", className)}
+      className={cn(
+        "relative flex flex-col items-center select-none",
+        className,
+      )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -370,33 +395,84 @@ export function AchievementBadge({
       {showRibbons && !isOnboarding && (
         <div className="absolute -bottom-5 flex justify-center z-0 w-full pointer-events-none scale-90">
           {level === "I" && (
-            <svg width="12" height="20" viewBox="0 0 14 24" className="transform origin-top">
-              <path d="M0 0 L14 0 L14 24 L7 19 L0 24 Z" fill={unlocked ? ribbonColor : "#9CA3AF"} />
+            <svg
+              width="12"
+              height="20"
+              viewBox="0 0 14 24"
+              className="transform origin-top"
+            >
+              <path
+                d="M0 0 L14 0 L14 24 L7 19 L0 24 Z"
+                fill={unlocked ? ribbonColor : "#9CA3AF"}
+              />
             </svg>
           )}
 
           {level === "II" && (
             <div className="flex gap-1.5 justify-center w-full">
-              <svg width="12" height="22" viewBox="0 0 14 28" className="transform -rotate-12 origin-top">
-                <path d="M0 0 L14 0 L14 28 L7 22 L0 28 Z" fill={unlocked ? ribbonColor : "#9CA3AF"} />
+              <svg
+                width="12"
+                height="22"
+                viewBox="0 0 14 28"
+                className="transform -rotate-12 origin-top"
+              >
+                <path
+                  d="M0 0 L14 0 L14 28 L7 22 L0 28 Z"
+                  fill={unlocked ? ribbonColor : "#9CA3AF"}
+                />
               </svg>
-              <svg width="12" height="22" viewBox="0 0 14 28" className="transform rotate-12 origin-top">
-                <path d="M0 0 L14 0 L14 28 L7 22 L0 28 Z" fill={unlocked ? ribbonColor : "#9CA3AF"} />
+              <svg
+                width="12"
+                height="22"
+                viewBox="0 0 14 28"
+                className="transform rotate-12 origin-top"
+              >
+                <path
+                  d="M0 0 L14 0 L14 28 L7 22 L0 28 Z"
+                  fill={unlocked ? ribbonColor : "#9CA3AF"}
+                />
               </svg>
             </div>
           )}
 
           {level === "III" && (
             <div className="flex gap-1 justify-center w-full -mt-0.5">
-              <svg width="10" height="24" viewBox="0 0 13 32" className="transform -rotate-20 origin-top opacity-85">
-                <path d="M0 0 L13 0 L13 32 L6.5 25 L0 32 Z" fill={unlocked ? ribbonColor : "#9CA3AF"} />
+              <svg
+                width="10"
+                height="24"
+                viewBox="0 0 13 32"
+                className="transform -rotate-20 origin-top opacity-85"
+              >
+                <path
+                  d="M0 0 L13 0 L13 32 L6.5 25 L0 32 Z"
+                  fill={unlocked ? ribbonColor : "#9CA3AF"}
+                />
               </svg>
-              <svg width="13" height="28" viewBox="0 0 16 36" className="transform origin-top -mt-0.5">
-                <path d="M0 0 L16 0 L16 36 L8 28 L0 36 Z" fill={unlocked ? "#FBBF24" : "#9CA3AF"} />
-                <path d="M2 0 L14 0 L14 32 L8 26 L2 32 Z" fill={unlocked ? ribbonColor : "#78716C"} />
+              <svg
+                width="13"
+                height="28"
+                viewBox="0 0 16 36"
+                className="transform origin-top -mt-0.5"
+              >
+                <path
+                  d="M0 0 L16 0 L16 36 L8 28 L0 36 Z"
+                  fill={unlocked ? "#FBBF24" : "#9CA3AF"}
+                />
+                <path
+                  d="M2 0 L14 0 L14 32 L8 26 L2 32 Z"
+                  fill={unlocked ? ribbonColor : "#78716C"}
+                />
               </svg>
-              <svg width="10" height="24" viewBox="0 0 13 32" className="transform rotate-20 origin-top opacity-85">
-                <path d="M0 0 L13 0 L13 32 L6.5 25 L0 32 Z" fill={unlocked ? ribbonColor : "#9CA3AF"} />
+              <svg
+                width="10"
+                height="24"
+                viewBox="0 0 13 32"
+                className="transform rotate-20 origin-top opacity-85"
+              >
+                <path
+                  d="M0 0 L13 0 L13 32 L6.5 25 L0 32 Z"
+                  fill={unlocked ? ribbonColor : "#9CA3AF"}
+                />
               </svg>
             </div>
           )}
@@ -411,12 +487,20 @@ export function AchievementBadge({
           sizeClasses[size],
           unlocked
             ? "ring-2 ring-white shadow-md hover:scale-110 hover:shadow-lg active:scale-95"
-            : "opacity-40 filter grayscale cursor-not-allowed hover:scale-105"
+            : "opacity-40 filter grayscale cursor-not-allowed hover:scale-105",
         )}
       >
-        <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full pointer-events-none">
+        <svg
+          viewBox="0 0 100 100"
+          className="absolute inset-0 w-full h-full pointer-events-none"
+        >
           <defs>
-            <radialGradient id={`bgGrad-${badgeKey || 'custom'}-${level}`} cx="50%" cy="50%" r="50%">
+            <radialGradient
+              id={`bgGrad-${badgeKey || "custom"}-${level}`}
+              cx="50%"
+              cy="50%"
+              r="50%"
+            >
               <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.15" />
               <stop offset="100%" stopColor={color} stopOpacity="1" />
             </radialGradient>
@@ -430,14 +514,26 @@ export function AchievementBadge({
           {/* Scallop Base Path */}
           <path
             d={getBadgePath(level)}
-            fill={unlocked ? (level === "III" ? "url(#goldRibbon)" : color) : "#6B7280"}
+            fill={
+              unlocked
+                ? level === "III"
+                  ? "url(#goldRibbon)"
+                  : color
+                : "#6B7280"
+            }
             className="drop-shadow-xs"
           />
 
           {/* Inner details based on Level */}
           {level === "I" && (
             <>
-              <circle cx="50" cy="50" r="34" fill={unlocked ? "#FFFFFF" : "#4B5563"} className="opacity-95" />
+              <circle
+                cx="50"
+                cy="50"
+                r="34"
+                fill={unlocked ? "#FFFFFF" : "#4B5563"}
+                className="opacity-95"
+              />
               <circle
                 cx="50"
                 cy="50"
@@ -452,7 +548,13 @@ export function AchievementBadge({
 
           {level === "II" && (
             <>
-              <circle cx="50" cy="50" r="34" fill={unlocked ? "#FFFFFF" : "#4B5563"} className="opacity-95" />
+              <circle
+                cx="50"
+                cy="50"
+                r="34"
+                fill={unlocked ? "#FFFFFF" : "#4B5563"}
+                className="opacity-95"
+              />
               <circle
                 cx="50"
                 cy="50"
@@ -475,7 +577,12 @@ export function AchievementBadge({
 
           {level === "III" && (
             <>
-              <circle cx="50" cy="50" r="35" fill={unlocked ? color : "#1F2937"} />
+              <circle
+                cx="50"
+                cy="50"
+                r="35"
+                fill={unlocked ? color : "#1F2937"}
+              />
               <circle
                 cx="50"
                 cy="50"
@@ -507,9 +614,7 @@ export function AchievementBadge({
         )}
 
         {/* Core Emoji / Icon content */}
-        <span className={cn("relative z-10", emojiTranslate)}>
-          {emoji}
-        </span>
+        <span className={cn("relative z-10", emojiTranslate)}>{emoji}</span>
 
         {/* Padlock overlay for locked state */}
         {!unlocked && (
@@ -524,19 +629,25 @@ export function AchievementBadge({
         <div className="absolute bottom-full mb-3 z-50 w-56 p-4 rounded-2xl bg-forest text-white shadow-xl border border-white/10 animate-fade-in text-left pointer-events-none">
           {/* Subtle triangle arrow */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-forest" />
-          
+
           <div className="flex items-start justify-between gap-2 mb-1.5">
             <span className="font-display font-bold text-sm tracking-tight leading-tight">
               {name}
             </span>
-            <span className={cn(
-              "text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider",
-              level === "III" ? "bg-fahy-yellow text-forest" : level === "II" ? "bg-sage-deep text-white" : "bg-white/15 text-white"
-            )}>
+            <span
+              className={cn(
+                "text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider",
+                level === "III"
+                  ? "bg-fahy-yellow text-forest"
+                  : level === "II"
+                    ? "bg-sage-deep text-white"
+                    : "bg-white/15 text-white",
+              )}
+            >
               Lv. {level}
             </span>
           </div>
-          
+
           {meta && (
             <p className="text-[9px] font-bold text-fahy-yellow uppercase tracking-widest mb-2 font-display">
               {meta.trackName} · {meta.rarity}
@@ -558,11 +669,18 @@ export function AchievementBadge({
           </div>
 
           <div className="mt-2.5 flex items-center justify-between text-[9px] font-bold">
-            <span className={cn(
-              "flex items-center gap-1",
-              unlocked ? "text-sage" : "text-white/30"
-            )}>
-              <span className={cn("w-1.5 h-1.5 rounded-full", unlocked ? "bg-sage-deep animate-ping" : "bg-white/20")} />
+            <span
+              className={cn(
+                "flex items-center gap-1",
+                unlocked ? "text-sage" : "text-white/30",
+              )}
+            >
+              <span
+                className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  unlocked ? "bg-sage-deep animate-ping" : "bg-white/20",
+                )}
+              />
               {unlocked ? "Unlocked" : "Locked"}
             </span>
             {equipped && (

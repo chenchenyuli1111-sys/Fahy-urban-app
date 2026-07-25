@@ -4,6 +4,7 @@ import { useLang, LANGUAGES } from "@/lib/i18n";
 import { Check, Globe, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -30,9 +31,13 @@ function Settings() {
   const handleUpdateProfile = async () => {
     try {
       await updateProfileData(username, photoURL);
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!", {
+        description: "Your profile has been saved to the server.",
+      });
     } catch (e) {
-      alert("Failed to update profile.");
+      toast.error("Failed to update profile.", {
+        description: "An error occurred while saving your preferences.",
+      });
     }
   };
 

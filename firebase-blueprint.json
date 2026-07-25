@@ -2,7 +2,7 @@
   "entities": {
     "User": {
       "title": "User",
-      "description": "User profile and stats.",
+      "description": "User profile, statistics, virtual pet state and unlocked achievements.",
       "type": "object",
       "properties": {
         "username": {
@@ -17,24 +17,253 @@
           "type": "string",
           "description": "The user's avatar URL."
         },
+        "bio": {
+          "type": "string",
+          "description": "The user's profile biography."
+        },
+        "locationPreference": {
+          "type": "string",
+          "description": "Preferred neighborhood area."
+        },
         "createdAt": {
           "type": "string",
           "description": "ISO timestamp of creation."
         },
         "points": {
-          "type": "number"
+          "type": "number",
+          "description": "Total ranking points."
         },
         "coins": {
-          "type": "number"
+          "type": "number",
+          "description": "Active peach coins balance."
         },
         "xp": {
-          "type": "number"
+          "type": "number",
+          "description": "Experience points accrued."
         },
         "level": {
-          "type": "number"
+          "type": "number",
+          "description": "Current virtual companion level."
+        },
+        "badges": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Keys of badges unlocked."
+        },
+        "equippedBadge": {
+          "type": "string",
+          "description": "Key of the currently equipped badge."
+        },
+        "fahyPet": {
+          "type": "object",
+          "description": "Virtual Fahy companion state including levels, garden plot, items, and needs."
         }
       },
       "required": ["username", "createdAt", "points", "coins", "xp", "level"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "User transaction history record for peach coins earnings and redemptions.",
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "description": "Amount of coins earned (+) or spent (-)."
+        },
+        "type": {
+          "type": "string",
+          "description": "Category of action, either 'earn' or 'spend'."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Context or detail about the transaction."
+        },
+        "timestamp": {
+          "type": "object",
+          "description": "Firestore ServerTimestamp of the transaction."
+        }
+      },
+      "required": ["amount", "type", "reason", "timestamp"]
+    },
+    "Workshop": {
+      "title": "Workshop",
+      "description": "Educational community and upcycling workshops or events.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "number"
+        },
+        "title": {
+          "type": "string"
+        },
+        "org": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "spots": {
+          "type": "number"
+        },
+        "reward": {
+          "type": "number"
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "org",
+        "category",
+        "date",
+        "location",
+        "spots",
+        "reward",
+        "participants"
+      ]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Environmental community reports submitted by citizens.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "ID of the user reporting."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "Evidence image URL."
+        },
+        "issueType": {
+          "type": "string",
+          "description": "Type of ecological concern."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the issue."
+        },
+        "lat": {
+          "type": "number",
+          "description": "Latitude coordinate."
+        },
+        "lng": {
+          "type": "number",
+          "description": "Longitude coordinate."
+        },
+        "restored": {
+          "type": "boolean",
+          "description": "Whether the problem has been solved."
+        },
+        "status": {
+          "type": "string",
+          "description": "Verification status (e.g., 'pending', 'resolved')."
+        },
+        "timestamp": {
+          "type": "object",
+          "description": "Firestore ServerTimestamp."
+        }
+      },
+      "required": [
+        "userId",
+        "imageUrl",
+        "issueType",
+        "description",
+        "lat",
+        "lng",
+        "restored",
+        "timestamp"
+      ]
+    },
+    "Metric": {
+      "title": "Metric",
+      "description": "Dynamic, real-time neighborhood metrics like AQI, crowd density, and noise.",
+      "type": "object",
+      "properties": {
+        "aqi": {
+          "type": "number"
+        },
+        "aqiStatus": {
+          "type": "string"
+        },
+        "crowd": {
+          "type": "string"
+        },
+        "crowdStatus": {
+          "type": "string"
+        },
+        "noise": {
+          "type": "string"
+        },
+        "noiseStatus": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "aqi",
+        "aqiStatus",
+        "crowd",
+        "crowdStatus",
+        "noise",
+        "noiseStatus"
+      ]
+    },
+    "Insight": {
+      "title": "Insight",
+      "description": "Eco-stories and urban planning news generated or submitted by users.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "author": {
+          "type": "string"
+        },
+        "readTime": {
+          "type": "string"
+        },
+        "likes": {
+          "type": "number"
+        },
+        "imageUrl": {
+          "type": "string"
+        },
+        "publishedAt": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "title",
+        "category",
+        "summary",
+        "content",
+        "author",
+        "readTime",
+        "likes",
+        "publishedAt"
+      ]
     }
   },
   "firestore": {
@@ -43,6 +272,36 @@
         "$ref": "#/entities/User"
       },
       "description": "Stores user profiles."
+    },
+    "users/{userId}/transactions/{txId}": {
+      "schema": {
+        "$ref": "#/entities/Transaction"
+      },
+      "description": "Stores transaction coin histories."
+    },
+    "workshops/{workshopId}": {
+      "schema": {
+        "$ref": "#/entities/Workshop"
+      },
+      "description": "Stores active educational workshops."
+    },
+    "reports/{reportId}": {
+      "schema": {
+        "$ref": "#/entities/Report"
+      },
+      "description": "Stores neighborhood eco-reports."
+    },
+    "metrics/{metricId}": {
+      "schema": {
+        "$ref": "#/entities/Metric"
+      },
+      "description": "Stores dynamic neighborhood indicators."
+    },
+    "insights/{insightId}": {
+      "schema": {
+        "$ref": "#/entities/Insight"
+      },
+      "description": "Stores ecological design research and reports."
     }
   }
 }

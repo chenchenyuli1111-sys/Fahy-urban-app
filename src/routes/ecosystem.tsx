@@ -1,17 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { FahyGuide } from "@/components/fahy/FahyGuide";
 import { useLang } from "@/lib/i18n";
 import { useAppState } from "@/lib/AppState";
-import { Camera, Ear, X, XCircle, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import {
   APIProvider,
   Map,
   AdvancedMarker,
   Pin,
 } from "@vis.gl/react-google-maps";
-import { analyzeImageFn, transcribeAudioFn } from "@/lib/gemini";
+import { EcoRadarScan } from "@/components/fahy/EcoRadarScan";
+import { EcoAILab } from "@/components/fahy/EcoAILab";
 
 export const Route = createFileRoute("/ecosystem")({
   head: () => ({
@@ -35,164 +36,8 @@ const collection = Array.from({ length: 32 }).map((_, i) => ({
 }));
 
 function Ecosystem() {
-  const [listening, setListening] = useState(false);
-  const [analyzingAudio, setAnalyzingAudio] = useState(false);
-  const [audioError, setAudioError] = useState("");
   const { k } = useLang();
-  const { addCoins, addPoints, addXp } = useAppState();
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [success, setSuccess] = useState(false);
   const [showNodeSuccess, setShowNodeSuccess] = useState(false);
-
-  // Gemini state variables
-  const [analyzingImage, setAnalyzingImage] = useState(false);
-  const [detectedSpecies, setDetectedSpecies] = useState<{
-    name: string;
-    description: string;
-    coins: number;
-  } | null>(null);
-  const [detectedSound, setDetectedSound] = useState<{
-    soundType: string;
-    description: string;
-  } | null>(null);
-
-  const startListening = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setListening(true);
-      setAnalyzingAudio(true);
-      setAudioError("");
-
-      const mediaRecorder = new MediaRecorder(stream);
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) chunks.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: "audio/webm" });
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64String = (reader.result as string).split(",")[1];
-          try {
-            const result = await transcribeAudioFn({
-              data: {
-                audioBase64: base64String,
-                mimeType: "audio/webm",
-              },
-            });
-            setAnalyzingAudio(false);
-            setListening(false);
-            if (result.success) {
-              setDetectedSound({
-                soundType: result.soundType,
-                description: result.description,
-              });
-              setSuccess(true);
-              addCoins(50, `Acoustic Tracking: ${result.soundType}`);
-              addPoints(50);
-              addXp(30);
-            } else {
-              setAudioError(
-                result.description ||
-                  "Unrecognized sound. Try getting closer to the birds or finding a quiet park area.",
-              );
-            }
-          } catch (e: any) {
-            setAnalyzingAudio(false);
-            setListening(false);
-            setAudioError("Error analyzing audio: " + e.message);
-          }
-        };
-        reader.readAsDataURL(audioBlob);
-      };
-
-      mediaRecorder.start();
-
-      // Stop recording after 4 seconds
-      setTimeout(() => {
-        if (mediaRecorder.state !== "inactive") {
-          mediaRecorder.stop();
-        }
-        stream.getTracks().forEach((track) => track.stop());
-      }, 4000);
-    } catch (err) {
-      console.error(err);
-      // Fallback for iframe sandbox environments
-      setAnalyzingAudio(true);
-      setTimeout(() => {
-        setListening(false);
-        setAnalyzingAudio(false);
-        // Simulate fallback success with standard local Eurasian Sparrow
-        setDetectedSound({
-          soundType: "麻雀 (Eurasian Tree Sparrow)",
-          description:
-            "Detected typical territorial sparrow chirp sequence recorded locally.",
-        });
-        setSuccess(true);
-        addCoins(50, "Acoustic Tracking: Eurasian Tree Sparrow");
-        addPoints(50);
-        addXp(30);
-      }, 2500);
-    }
-  };
-
-  const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const now = Date.now();
-    const timeDiff = now - file.lastModified;
-    const FIVE_MINUTES = 5 * 60 * 1000;
-
-    if (timeDiff > FIVE_MINUTES) {
-      setErrorMsg(
-        "Image rejected: Photo must be taken live to prevent cheating.",
-      );
-      setSuccess(false);
-      return;
-    }
-
-    setAnalyzingImage(true);
-    setErrorMsg("");
-
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64String = (reader.result as string).split(",")[1];
-      try {
-        const result = await analyzeImageFn({
-          data: {
-            imageBase64: base64String,
-            mimeType: file.type,
-            mode: "species",
-          },
-        });
-        setAnalyzingImage(false);
-        if (result.success) {
-          setDetectedSpecies({
-            name: result.name,
-            description: result.description,
-            coins: result.coins || 50,
-          });
-          setSuccess(true);
-          addCoins(result.coins || 50, `Tracked Species: ${result.name}`);
-          addPoints(50);
-          addXp(30);
-        } else {
-          setErrorMsg(
-            result.description ||
-              "This does not look like a biological plant, flower, bird, insect, or tree species of Hong Kong. Please try photographing real wildlife!",
-          );
-        }
-      } catch (err: any) {
-        setAnalyzingImage(false);
-        setErrorMsg("Failed to analyze image: " + err.message);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
 
   const handleNodeClick = () => {
     setShowNodeSuccess(true);
@@ -219,8 +64,8 @@ function Ecosystem() {
           {hasValidKey ? (
             <APIProvider apiKey={API_KEY} version="weekly">
               <Map
-                defaultCenter={{ lat: 22.396, lng: 114.109 }}
-                defaultZoom={13}
+                defaultCenter={{ lat: 22.3255, lng: 114.1706 }}
+                defaultZoom={15}
                 mapId="ECO_MAP_ID"
                 internalUsageAttributionIds={["gmp_mcp_codeassist_v1_aistudio"]}
                 style={{ width: "100%", height: "100%" }}
@@ -275,42 +120,17 @@ function Ecosystem() {
         </div>
       </section>
 
-      <section className="px-5 mt-5 grid grid-cols-2 gap-3">
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          ref={fileInputRef}
-          onChange={handleCapture}
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-forest text-white p-4 rounded-3xl flex flex-col items-start gap-3 active:scale-[0.98] transition-transform"
-        >
-          <Camera className="w-5 h-5 text-fahy-yellow" />
-          <div className="text-left">
-            <p className="text-[10px] uppercase tracking-widest text-white/60 font-bold">
-              {k("eco.action.track")}
-            </p>
-            <p className="text-sm font-bold">Take a Photo</p>
-          </div>
-        </button>
-        <button
-          onClick={startListening}
-          className="bg-peach/20 border border-peach/40 p-4 rounded-3xl flex flex-col items-start gap-3 active:scale-[0.98] transition-transform"
-        >
-          <Ear className="w-5 h-5 text-peach" />
-          <div className="text-left">
-            <p className="text-[10px] uppercase tracking-widest text-forest/50 font-bold">
-              {k("eco.action.listen")}
-            </p>
-            <p className="text-sm font-bold">{k("eco.action.silent")}</p>
-          </div>
-        </button>
+      {/* The unified EcoRadarScan component manages all scanning/listening/photo-taking modes */}
+      <section className="px-5 mt-6">
+        <EcoRadarScan />
       </section>
 
-      <section className="px-5 mt-8">
+      {/* Advanced Gemini Pro Eco-AI Laboratory */}
+      <section className="px-5 mt-6">
+        <EcoAILab />
+      </section>
+
+      <section className="px-5 mt-8 pb-10">
         <div className="flex justify-between items-end mb-4">
           <h2 className="font-display font-bold text-lg leading-none">
             {k("eco.book")}
@@ -325,7 +145,7 @@ function Ecosystem() {
               key={c.id}
               className={`aspect-square rounded-2xl border grid place-items-center ${
                 c.unlocked
-                  ? "bg-white border-black/5 shadow-xs cursor-pointer active:scale-95"
+                  ? "bg-white border-black/5 shadow-xs cursor-pointer active:scale-95 animate-fade-in"
                   : "bg-slate-100/50 border-dashed border-slate-300"
               }`}
               onClick={c.state === "final" ? handleNodeClick : undefined}
@@ -361,158 +181,29 @@ function Ecosystem() {
         </p>
       </section>
 
-      {listening && (
-        <div className="fixed inset-0 z-50 bg-forest/90 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
-          <p className="text-fahy-yellow text-[10px] uppercase tracking-widest font-bold mb-2">
-            {analyzingAudio ? "ANALYZING AUDIO..." : k("eco.listening.tag")}
-          </p>
-
-          <p className="text-white font-display text-xl mb-8">
-            {analyzingAudio
-              ? "Analyzing frequencies with Gemini..."
-              : k("eco.listening.detected")}
-          </p>
-
-          <div className="flex items-end gap-1.5 h-32">
-            {Array.from({ length: 24 }).map((_, i) => (
-              <div
-                key={i}
-                className={`w-2 rounded-full animate-pulse ${analyzingAudio ? "bg-peach" : "bg-fahy-yellow"}`}
-                style={{
-                  height: `${20 + Math.abs(Math.sin(i * 0.7)) * 80}%`,
-                  animationDelay: `${i * 60}ms`,
-                  animationDuration: analyzingAudio ? "0.6s" : "1.2s",
-                }}
-              />
-            ))}
-          </div>
-
-          <p className="text-white/60 text-xs mt-8 max-w-[260px] text-center">
-            {analyzingAudio
-              ? "Identifying bird calls and biological sound signatures..."
-              : "Listening to local environment..."}
-          </p>
-        </div>
-      )}
-
-      {analyzingImage && (
-        <div className="fixed inset-0 z-50 bg-forest/90 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
-          <p className="text-fahy-yellow text-[10px] uppercase tracking-widest font-bold mb-2">
-            FAHY ECO-INTELLIGENCE
-          </p>
-          <p className="text-white font-display text-lg mb-6">
-            Analyzing photo with Gemini...
-          </p>
-          <div className="w-12 h-12 border-4 border-fahy-yellow border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-
-      {audioError && (
-        <div
-          onClick={() => setAudioError("")}
-          className="fixed inset-0 z-50 bg-forest/80 backdrop-blur-md grid place-items-center animate-fade-in"
-        >
-          <div className="bg-white rounded-3xl p-6 mx-6 max-w-xs text-center border-2 border-peach">
-            <div className="w-16 h-16 mx-auto mb-3 grid place-items-center bg-peach/20 rounded-full">
-              <XCircle className="w-8 h-8 text-peach" strokeWidth={3} />
-            </div>
-            <p className="font-display font-bold text-lg leading-tight mb-2">
-              Acoustic Analysis Failed
-            </p>
-            <p className="text-xs text-forest/80 mb-4">{audioError}</p>
-            <button className="bg-peach text-white font-bold text-sm px-6 py-2 rounded-full w-full">
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {errorMsg && (
-        <div
-          onClick={() => setErrorMsg("")}
-          className="fixed inset-0 z-50 bg-forest/80 backdrop-blur-md grid place-items-center animate-fade-in"
-        >
-          <div className="bg-white rounded-3xl p-6 mx-6 max-w-xs text-center border-2 border-peach">
-            <div className="w-16 h-16 mx-auto mb-3 grid place-items-center bg-peach/20 rounded-full">
-              <XCircle className="w-8 h-8 text-peach" strokeWidth={3} />
-            </div>
-            <p className="font-display font-bold text-lg leading-tight mb-2">
-              Validation Failed
-            </p>
-            <p className="text-xs text-forest/80 mb-4">{errorMsg}</p>
-            <button className="bg-peach text-white font-bold text-sm px-6 py-2 rounded-full w-full">
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-      {success && (
-        <div
-          onClick={() => {
-            setSuccess(false);
-            setDetectedSpecies(null);
-            setDetectedSound(null);
-          }}
-          className="fixed inset-0 z-50 bg-forest/80 backdrop-blur-md grid place-items-center animate-fade-in"
-        >
-          <div className="bg-white rounded-3xl p-6 mx-6 max-w-sm text-center">
-            <div className="w-12 h-12 bg-sage/30 text-sage-deep rounded-full grid place-items-center mx-auto mb-3">
-              <Check className="w-6 h-6" strokeWidth={3} />
-            </div>
-            <p className="font-display font-bold text-lg flex items-center justify-center gap-1">
-              Tracked Successfully!
-            </p>
-
-            {detectedSpecies && (
-              <div className="mt-2 text-left bg-surface p-4 rounded-2xl border border-black/5">
-                <p className="font-bold text-sm text-forest mb-1">
-                  Species: {detectedSpecies.name}
-                </p>
-                <p className="text-xs text-forest/70 leading-relaxed mb-2">
-                  {detectedSpecies.description}
-                </p>
-                <p className="text-xs font-bold text-peach">
-                  Reward: +{detectedSpecies.coins} Peach Blossom Coins
-                </p>
-              </div>
-            )}
-
-            {detectedSound && (
-              <div className="mt-2 text-left bg-surface p-4 rounded-2xl border border-black/5">
-                <p className="font-bold text-sm text-forest mb-1">
-                  Sound Signature: {detectedSound.soundType}
-                </p>
-                <p className="text-xs text-forest/70 leading-relaxed mb-2">
-                  {detectedSound.description}
-                </p>
-                <p className="text-xs font-bold text-peach">
-                  Reward: +50 Peach Blossom Coins
-                </p>
-              </div>
-            )}
-
-            <button className="mt-4 bg-forest text-white font-bold text-sm px-6 py-2.5 rounded-full w-full">
-              Awesome!
-            </button>
-          </div>
-        </div>
-      )}
-
       {showNodeSuccess && (
         <div
           onClick={() => setShowNodeSuccess(false)}
-          className="fixed inset-0 z-50 bg-forest/80 backdrop-blur-md grid place-items-center animate-fade-in"
+          className="fixed inset-0 z-50 bg-forest/80 backdrop-blur-md grid place-items-center animate-fade-in p-6"
         >
-          <div className="bg-white rounded-3xl p-6 mx-6 max-w-xs text-center">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl p-6 max-w-xs text-center border border-black/5"
+          >
+            <div className="w-12 h-12 bg-sage/30 text-sage-deep rounded-full grid place-items-center mx-auto mb-3">
+              <Check className="w-6 h-6 animate-pulse" strokeWidth={3} />
+            </div>
             <p className="font-display font-bold text-lg text-peach mb-1 mt-4">
               Glowing Node Tapped!
             </p>
-            <p className="text-xs text-forest/60 mb-4">
+            <p className="text-xs text-forest/60 mb-4 leading-relaxed">
               You found a special node in the ecosystem. This species is fully
               bloomed! You earned a rare badge fragment.
             </p>
-            <button className="bg-peach text-white font-bold text-sm px-6 py-2 rounded-full w-full">
+            <button
+              onClick={() => setShowNodeSuccess(false)}
+              className="bg-peach text-white font-bold text-sm px-6 py-2 rounded-full w-full cursor-pointer hover:bg-peach/90"
+            >
               Claim Reward
             </button>
           </div>

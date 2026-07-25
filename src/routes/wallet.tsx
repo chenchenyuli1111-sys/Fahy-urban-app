@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import {
   collection,
   query,
+  where,
   orderBy,
   limit,
   onSnapshot,
@@ -18,6 +19,7 @@ import {
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/AuthContext";
 import { QrCode, Sparkles, Leaf, Award } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/wallet")({
   head: () => ({
@@ -58,6 +60,7 @@ function Wallet() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [txLoading, setTxLoading] = useState(true);
   const [txError, setTxError] = useState<string | null>(null);
+  const [reportsCount, setReportsCount] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -66,12 +69,14 @@ function Wallet() {
     }
     setTxLoading(true);
     setTxError(null);
+
+    // 1. Transactions subscription
     const q = query(
       collection(db, "users", user.uid, "transactions"),
       orderBy("timestamp", "desc"),
       limit(5),
     );
-    return onSnapshot(
+    const unsubTx = onSnapshot(
       q,
       (snapshot) => {
         setTransactions(
@@ -88,18 +93,54 @@ function Wallet() {
         setTxLoading(false);
       },
     );
+
+    // 2. Reports subscription to calculate dynamic carbon offsets
+    const reportsQuery = query(
+      collection(db, "reports"),
+      where("userId", "==", user.uid),
+    );
+    const unsubReports = onSnapshot(
+      reportsQuery,
+      (snap) => {
+        setReportsCount(snap.size);
+      },
+      (err) => {
+        console.error("Error loading reports in wallet:", err);
+      },
+    );
+
+    return () => {
+      unsubTx();
+      unsubReports();
+    };
   }, [user]);
+
   const { formatCoins, k } = useLang();
   const { coins, deductCoins, unlockedBadges, equippedBadge } = useAppState();
 
   const handleRedeem = async (reward: (typeof rewards)[0]) => {
     const success = await deductCoins(reward.cost, k(reward.key));
     if (success) {
-      alert("Successfully redeemed! Item will be shipped or activated.");
+      toast.success(
+        `Successfully redeemed ${k(reward.key)}! It will be activated shortly.`,
+        {
+          description: `Deducted ${reward.cost} 桃源幣 from your balance.`,
+        },
+      );
     } else {
-      alert("Not enough coins!");
+      toast.error("Not enough coins!", {
+        description: `You need ${reward.cost} 桃源幣 to redeem this reward.`,
+      });
     }
   };
+
+  // Dynamic Carbon Math: Base of 0.5kg + 1.5kg per eco report
+  const savedCarbon = (0.5 + reportsCount * 1.5).toFixed(1);
+  const targetCarbon = 12.4;
+  const progressPercent = Math.min(
+    100,
+    Math.round((parseFloat(savedCarbon) / targetCarbon) * 100),
+  );
 
   return (
     <AppShell>
@@ -143,20 +184,25 @@ function Wallet() {
           </div>
           <div className="flex items-end justify-between mb-3">
             <div>
-              <p className="font-display font-bold text-3xl">4.2 kg</p>
+              <p className="font-display font-bold text-3xl">
+                {savedCarbon} kg
+              </p>
               <p className="text-[11px] text-forest/50">
                 {k("wallet.tracker.saved")}
               </p>
             </div>
             <p className="text-[11px] font-bold text-sage-deep">
-              {k("wallet.tracker.vs")}
+              {progressPercent}% towards next milestone
             </p>
           </div>
           <div className="h-2 bg-sage/20 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-sage-deep to-sage rounded-full w-[68%]" />
+            <div
+              className="h-full bg-gradient-to-r from-sage-deep to-sage rounded-full transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
           <p className="text-[10px] text-forest/40 mt-2">
-            {k("wallet.tracker.goal")}
+            Target: {targetCarbon} kg (Each environmental report offsets 1.5 kg)
           </p>
         </div>
       </section>

@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { CoCreatorStrip } from "@/components/fahy/CoCreatorStrip";
 import { PixelFahy } from "@/components/fahy/PixelFahy";
 import { AlertTriangle } from "lucide-react";
 import { useLang } from "@/lib/i18n";
@@ -14,6 +13,7 @@ import {
   NeighborhoodMetrics,
   Workshop,
 } from "@/lib/firestoreService";
+import { FahySanctuary } from "@/components/fahy/FahySanctuary";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,7 +37,8 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { formatCoins, k } = useLang();
-  const { coins, level, unlockedBadges, equippedBadge } = useAppState();
+  const { coins, level, unlockedBadges, equippedBadge, equippedFahy } =
+    useAppState();
 
   const [metrics, setMetrics] = useState<NeighborhoodMetrics>({
     aqi: 24,
@@ -98,7 +99,11 @@ function Index() {
                 className="absolute -top-1.5 -left-1.5 z-20 drop-shadow-md pointer-events-none"
               />
             )}
-            <PixelFahy level={level} size={56} />
+            <PixelFahy
+              evolution={equippedFahy || undefined}
+              level={level}
+              size={56}
+            />
             <div className="absolute -bottom-1 -right-1 bg-fahy-yellow text-[10px] px-1.5 py-0.5 rounded-full font-bold border-2 border-white">
               Lv. {level}
             </div>
@@ -146,6 +151,10 @@ function Index() {
           <div className="absolute right-[-30px] top-[-20px] w-36 h-36 bg-fahy-yellow/15 rounded-full" />
           <div className="absolute right-6 bottom-[-20px] w-20 h-20 bg-peach/20 rounded-full" />
         </div>
+      </section>
+
+      <section className="px-5 mb-8">
+        <FahySanctuary />
       </section>
 
       <section className="px-5 mb-8">
@@ -293,8 +302,6 @@ function Index() {
           </div>
         </div>
       </section>
-
-      <CoCreatorStrip />
 
       <Link
         to="/report"

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 
 // Shared client initialization
 function getGeminiClient() {
@@ -55,7 +55,7 @@ export const analyzeImageFn = createServerFn({ method: "POST" })
             "- description: string (1-2 sentences in Traditional Chinese or English describing what is visible in the photo and why it's reportable or not)";
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-3.1-pro-preview",
         contents: { parts: [imagePart, { text: prompt }] },
         config: {
           systemInstruction,
@@ -197,28 +197,39 @@ export const chatWithFahyFn = createServerFn({ method: "POST" })
         parts: [{ text: m.content }],
       }));
 
-      // Configure tools: use googleSearch to ground facts about Mong Kok & Fa Hui Park in real-time
+      // Use Search Grounding with gemini-3.5-flash for real-time information when highThinking is disabled
       const tools = [{ googleSearch: {} }];
-
-      // Configure thinking level based on highThinking
-      // In @google/genai, thinkingLevel is set inside thinkingConfig
-      // But we can also set the model to 'gemini-3.1-pro-preview' for complex thinking if requested, or use flash with thinkingConfig if available.
-      // Let's use 'gemini-3.5-flash' for standard chat, and if highThinking is true, let's use 'gemini-3.5-flash' with HIGH reasoning.
-      const model = "gemini-3.5-flash";
+      const model = highThinking
+        ? "gemini-3.1-pro-preview"
+        : "gemini-3.5-flash";
 
       const response = await ai.models.generateContent({
         model,
         contents: formattedContents,
         config: {
           systemInstruction,
-          tools,
-          // Since thinkingLevel is supported on gemini-3 series, we can configure it if requested
-          thinkingConfig: highThinking ? { thinkingBudget: 2048 } : undefined,
+          tools: highThinking ? undefined : tools,
+          thinkingConfig: highThinking
+            ? { thinkingLevel: ThinkingLevel.HIGH }
+            : undefined,
         },
       });
 
+      // Extract search grounding metadata sources if available
+      const chunks =
+        response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      const sources = chunks
+        ? chunks
+            .map((c: any) => ({
+              uri: c.web?.uri || "",
+              title: c.web?.title || c.web?.uri || "Web Source",
+            }))
+            .filter((s: any) => s.uri)
+        : [];
+
       return {
         response: response.text || "Sorry, I couldn't generate a response.",
+        sources,
       };
     } catch (error: any) {
       console.error("Gemini Chat Error:", error);
@@ -226,6 +237,69 @@ export const chatWithFahyFn = createServerFn({ method: "POST" })
         response:
           "Sorry, I'm having trouble connecting to my brain right now: " +
           (error.message || "Unknown error"),
+        sources: [],
+      };
+    }
+  });
+
+export const analyzeVideoFn = createServerFn({ method: "POST" })
+  .validator((d: { videoBase64: string; mimeType: string }) => d)
+  .handler(async ({ data: { videoBase64, mimeType } }) => {
+    try {
+      const ai = getGeminiClient();
+      const videoPart = {
+        inlineData: {
+          mimeType,
+          data: videoBase64,
+        },
+      };
+
+      const systemInstruction =
+        "You are an expert bio-monitoring AI specializing in Hong Kong's urban parks (such as Fa Hui Park) and cultural environments. " +
+        "Analyze the uploaded video for key ecological or community findings (such as bird movements, insect flight, plant conditions, weather elements, visitor activity, or public space maintenance).";
+
+      const prompt =
+        "Perform a comprehensive video analysis. Look for species of plants, flowers, birds, or insects, and inspect any environmental threats, littering, foliage health, or community activities. " +
+        "You must return a JSON response with these properties:\n" +
+        "- success: boolean (true if the video contains readable frames related to natural/park scenes, wildlife, or municipal environments)\n" +
+        "- title: string (a short, descriptive title of what was captured, e.g. 'Foliage Inspection' or 'Wildlife Activity')\n" +
+        "- keyFindings: string[] (at least 3 detailed bullet points describing your observations across the clip)\n" +
+        "- recommendation: string (1-2 sentences with concrete eco-friendly recommendations or park maintenance suggestions based on the video content)";
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.1-pro-preview",
+        contents: { parts: [videoPart, { text: prompt }] },
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              success: { type: Type.BOOLEAN },
+              title: { type: Type.STRING },
+              keyFindings: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              recommendation: { type: Type.STRING },
+            },
+            required: ["success", "title", "keyFindings", "recommendation"],
+          },
+        },
+      });
+
+      const text = response.text || "{}";
+      return JSON.parse(text);
+    } catch (error: any) {
+      console.error("Gemini Video Analysis Error:", error);
+      return {
+        success: false,
+        title: "Video Parsing Failed",
+        keyFindings: [
+          "Error: " + (error.message || "Failed to analyze video clip."),
+        ],
+        recommendation:
+          "Please try uploading a different video format or clip.",
       };
     }
   });

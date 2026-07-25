@@ -17,6 +17,7 @@ import {
   QuerySnapshot,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { handleFirestoreError, OperationType } from "./firestoreError";
 
 // Types for Firestore Data
 export interface NeighborhoodMetrics {
@@ -104,7 +105,15 @@ export async function updateMetrics(
   metrics: Partial<NeighborhoodMetrics>,
 ): Promise<void> {
   const docRef = doc(db, "metrics", METRICS_DOC_ID);
-  await updateDoc(docRef, metrics);
+  try {
+    await updateDoc(docRef, metrics);
+  } catch (error) {
+    handleFirestoreError(
+      error,
+      OperationType.WRITE,
+      `metrics/${METRICS_DOC_ID}`,
+    );
+  }
 }
 
 // ------------------------------
@@ -162,8 +171,16 @@ export function subscribeToWorkshops(
     (snap) => {
       if (snap.empty) {
         // Seed initial workshops
-        INITIAL_WORKSHOPS.forEach((w) => {
-          setDoc(doc(db, "workshops", String(w.id)), w);
+        INITIAL_WORKSHOPS.forEach(async (w) => {
+          try {
+            await setDoc(doc(db, "workshops", String(w.id)), w);
+          } catch (err) {
+            handleFirestoreError(
+              err,
+              OperationType.CREATE,
+              `workshops/${w.id}`,
+            );
+          }
         });
       } else {
         const list = snap.docs.map((doc) => doc.data() as Workshop);
@@ -174,7 +191,11 @@ export function subscribeToWorkshops(
     },
     (err) => {
       console.error("Firestore workshops snapshot error:", err);
-      if (onError) onError(err);
+      try {
+        handleFirestoreError(err, OperationType.GET, "workshops");
+      } catch (mappedErr: any) {
+        if (onError) onError(mappedErr);
+      }
     },
   );
 }
@@ -187,16 +208,20 @@ export async function enrollInWorkshop(
   userId: string,
 ): Promise<void> {
   const docRef = doc(db, "workshops", String(workshopId));
-  const snap = await getDoc(docRef);
+  try {
+    const snap = await getDoc(docRef);
 
-  if (snap.exists()) {
-    const w = snap.data() as Workshop;
-    if (w.spots > 0 && !w.participants.includes(userId)) {
-      await updateDoc(docRef, {
-        spots: w.spots - 1,
-        participants: arrayUnion(userId),
-      });
+    if (snap.exists()) {
+      const w = snap.data() as Workshop;
+      if (w.spots > 0 && !w.participants.includes(userId)) {
+        await updateDoc(docRef, {
+          spots: w.spots - 1,
+          participants: arrayUnion(userId),
+        });
+      }
     }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `workshops/${workshopId}`);
   }
 }
 
@@ -209,15 +234,27 @@ export async function enrollInWorkshop(
  */
 export function subscribeToReports(
   onUpdate: (reports: Report[]) => void,
+  onError?: (error: Error) => void,
 ): () => void {
   const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
-  return onSnapshot(q, (snap) => {
-    const reportsList = snap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Report[];
-    onUpdate(reportsList);
-  });
+  return onSnapshot(
+    q,
+    (snap) => {
+      const reportsList = snap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Report[];
+      onUpdate(reportsList);
+    },
+    (err) => {
+      console.error("Firestore reports snapshot error:", err);
+      try {
+        handleFirestoreError(err, OperationType.LIST, "reports");
+      } catch (mappedErr: any) {
+        if (onError) onError(mappedErr);
+      }
+    },
+  );
 }
 
 /**
@@ -227,11 +264,16 @@ export async function createReport(
   report: Omit<Report, "timestamp">,
 ): Promise<string> {
   const collRef = collection(db, "reports");
-  const docRef = await addDoc(collRef, {
-    ...report,
-    timestamp: serverTimestamp(),
-  });
-  return docRef.id;
+  try {
+    const docRef = await addDoc(collRef, {
+      ...report,
+      timestamp: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, "reports");
+    throw error;
+  }
 }
 
 // ------------------------------
@@ -247,43 +289,48 @@ export async function fetchLeaderboard(
   limitCount: number = 10,
 ): Promise<LeaderboardUser[]> {
   const usersRef = collection(db, "users");
-  const q = query(usersRef, orderBy(sortBy, "desc"), limit(limitCount));
-  const snapshot = await getDocs(q);
+  try {
+    const q = query(usersRef, orderBy(sortBy, "desc"), limit(limitCount));
+    const snapshot = await getDocs(q);
 
-  const fetchedUsers = snapshot.docs.map((doc, index) => {
-    const data = doc.data();
-    return {
-      rank: index + 1,
-      name: data.username || "Anonymous",
-      score: sortBy === "points" ? data.points || 0 : data.level || 1,
-      level: data.level || 1,
-      isMe: currentUserId ? doc.id === currentUserId : false,
-      photoURL: data.photoURL,
-      uid: doc.id,
-    };
-  });
-
-  // If current user is not in the top 10, find their exact ranking
-  if (currentUserId && !fetchedUsers.some((u) => u.isMe)) {
-    const allQuery = query(usersRef, orderBy(sortBy, "desc"));
-    const allDocs = await getDocs(allQuery);
-    const userIndex = allDocs.docs.findIndex((d) => d.id === currentUserId);
-
-    if (userIndex !== -1) {
-      const data = allDocs.docs[userIndex].data();
-      fetchedUsers.push({
-        rank: userIndex + 1,
+    const fetchedUsers = snapshot.docs.map((doc, index) => {
+      const data = doc.data();
+      return {
+        rank: index + 1,
         name: data.username || "Anonymous",
         score: sortBy === "points" ? data.points || 0 : data.level || 1,
         level: data.level || 1,
-        isMe: true,
+        isMe: currentUserId ? doc.id === currentUserId : false,
         photoURL: data.photoURL,
-        uid: currentUserId,
-      });
-    }
-  }
+        uid: doc.id,
+      };
+    });
 
-  return fetchedUsers;
+    // If current user is not in the top 10, find their exact ranking
+    if (currentUserId && !fetchedUsers.some((u) => u.isMe)) {
+      const allQuery = query(usersRef, orderBy(sortBy, "desc"));
+      const allDocs = await getDocs(allQuery);
+      const userIndex = allDocs.docs.findIndex((d) => d.id === currentUserId);
+
+      if (userIndex !== -1) {
+        const data = allDocs.docs[userIndex].data();
+        fetchedUsers.push({
+          rank: userIndex + 1,
+          name: data.username || "Anonymous",
+          score: sortBy === "points" ? data.points || 0 : data.level || 1,
+          level: data.level || 1,
+          isMe: true,
+          photoURL: data.photoURL,
+          uid: currentUserId,
+        });
+      }
+    }
+
+    return fetchedUsers;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, "users");
+    throw error;
+  }
 }
 
 // ------------------------------
@@ -300,6 +347,7 @@ export interface UserProfile {
   points: number;
   badges?: string[];
   equippedBadge?: string;
+  equippedFahy?: string;
   photoURL?: string;
   bio?: string;
   locationPreference?: string;
@@ -312,39 +360,11 @@ export async function fetchUserProfile(
   uid: string,
 ): Promise<UserProfile | null> {
   const docRef = doc(db, "users", uid);
-  const snap = await getDoc(docRef);
-  if (snap.exists()) {
-    const data = snap.data();
-    return {
-      uid,
-      username: data.username || "Anonymous",
-      email: data.email || "",
-      coins: data.coins || 0,
-      xp: data.xp || 0,
-      level: data.level || 1,
-      points: data.points || 0,
-      badges: data.badges || [],
-      equippedBadge: data.equippedBadge || "",
-      photoURL: data.photoURL || "",
-      bio: data.bio || "",
-      locationPreference: data.locationPreference || "",
-    };
-  }
-  return null;
-}
-
-/**
- * Subscribes to user profile data changes.
- */
-export function subscribeToUserProfile(
-  uid: string,
-  onUpdate: (profile: UserProfile) => void,
-): () => void {
-  const docRef = doc(db, "users", uid);
-  return onSnapshot(docRef, (snap) => {
+  try {
+    const snap = await getDoc(docRef);
     if (snap.exists()) {
       const data = snap.data();
-      onUpdate({
+      return {
         uid,
         username: data.username || "Anonymous",
         email: data.email || "",
@@ -354,12 +374,59 @@ export function subscribeToUserProfile(
         points: data.points || 0,
         badges: data.badges || [],
         equippedBadge: data.equippedBadge || "",
+        equippedFahy: data.equippedFahy || "",
         photoURL: data.photoURL || "",
         bio: data.bio || "",
         locationPreference: data.locationPreference || "",
-      });
+      };
     }
-  });
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, `users/${uid}`);
+    throw error;
+  }
+}
+
+/**
+ * Subscribes to user profile data changes.
+ */
+export function subscribeToUserProfile(
+  uid: string,
+  onUpdate: (profile: UserProfile) => void,
+  onError?: (err: Error) => void,
+): () => void {
+  const docRef = doc(db, "users", uid);
+  return onSnapshot(
+    docRef,
+    (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        onUpdate({
+          uid,
+          username: data.username || "Anonymous",
+          email: data.email || "",
+          coins: data.coins || 0,
+          xp: data.xp || 0,
+          level: data.level || 1,
+          points: data.points || 0,
+          badges: data.badges || [],
+          equippedBadge: data.equippedBadge || "",
+          equippedFahy: data.equippedFahy || "",
+          photoURL: data.photoURL || "",
+          bio: data.bio || "",
+          locationPreference: data.locationPreference || "",
+        });
+      }
+    },
+    (err) => {
+      console.error("Firestore user profile snapshot error:", err);
+      try {
+        handleFirestoreError(err, OperationType.GET, `users/${uid}`);
+      } catch (mappedErr: any) {
+        if (onError) onError(mappedErr);
+      }
+    },
+  );
 }
 
 /**
@@ -370,7 +437,12 @@ export async function updateUserProfile(
   profile: Partial<Omit<UserProfile, "uid">>,
 ): Promise<void> {
   const docRef = doc(db, "users", uid);
-  await updateDoc(docRef, profile);
+  try {
+    await updateDoc(docRef, profile);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `users/${uid}`);
+    throw error;
+  }
 }
 
 // ------------------------------
@@ -435,27 +507,47 @@ const INITIAL_INSIGHTS: Omit<UrbanInsight, "id" | "publishedAt" | "likes">[] = [
  */
 export function subscribeToUrbanInsights(
   onUpdate: (insights: UrbanInsight[]) => void,
+  onError?: (error: Error) => void,
 ): () => void {
   const collRef = collection(db, "insights");
 
-  return onSnapshot(collRef, (snap) => {
-    if (snap.empty) {
-      // Seed initial insights
-      INITIAL_INSIGHTS.forEach(async (insight, idx) => {
-        await setDoc(doc(db, "insights", `insight_${idx + 1}`), {
-          ...insight,
-          likes: Math.floor(Math.random() * 20) + 5,
-          publishedAt: serverTimestamp(),
+  return onSnapshot(
+    collRef,
+    (snap) => {
+      if (snap.empty) {
+        // Seed initial insights
+        INITIAL_INSIGHTS.forEach(async (insight, idx) => {
+          try {
+            await setDoc(doc(db, "insights", `insight_${idx + 1}`), {
+              ...insight,
+              likes: Math.floor(Math.random() * 20) + 5,
+              publishedAt: serverTimestamp(),
+            });
+          } catch (err) {
+            handleFirestoreError(
+              err,
+              OperationType.CREATE,
+              `insights/insight_${idx + 1}`,
+            );
+          }
         });
-      });
-    } else {
-      const list = snap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as UrbanInsight[];
-      onUpdate(list);
-    }
-  });
+      } else {
+        const list = snap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as UrbanInsight[];
+        onUpdate(list);
+      }
+    },
+    (err) => {
+      console.error("Firestore urban insights snapshot error:", err);
+      try {
+        handleFirestoreError(err, OperationType.GET, "insights");
+      } catch (mappedErr: any) {
+        if (onError) onError(mappedErr);
+      }
+    },
+  );
 }
 
 /**
@@ -465,12 +557,17 @@ export async function createUrbanInsight(
   insight: Omit<UrbanInsight, "id" | "publishedAt" | "likes">,
 ): Promise<string> {
   const collRef = collection(db, "insights");
-  const docRef = await addDoc(collRef, {
-    ...insight,
-    likes: 0,
-    publishedAt: serverTimestamp(),
-  });
-  return docRef.id;
+  try {
+    const docRef = await addDoc(collRef, {
+      ...insight,
+      likes: 0,
+      publishedAt: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, "insights");
+    throw error;
+  }
 }
 
 /**
@@ -478,7 +575,12 @@ export async function createUrbanInsight(
  */
 export async function likeUrbanInsight(insightId: string): Promise<void> {
   const docRef = doc(db, "insights", insightId);
-  await updateDoc(docRef, {
-    likes: increment(1),
-  });
+  try {
+    await updateDoc(docRef, {
+      likes: increment(1),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `insights/${insightId}`);
+    throw error;
+  }
 }

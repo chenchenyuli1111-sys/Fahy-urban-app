@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
+import { handleFirestoreError, OperationType } from "./firestoreError";
 
 interface AppState {
   coins: number;
@@ -24,11 +25,13 @@ interface AppState {
   points: number;
   unlockedBadges: string[];
   equippedBadge: string | null;
+  equippedFahy: string | null;
   addCoins: (amount: number, reason?: string) => void;
   deductCoins: (amount: number, reason?: string) => Promise<boolean>;
   addXp: (amount: number) => void;
   addPoints: (amount: number) => void;
   setEquippedBadge: (badgeKey: string | null) => Promise<void>;
+  setEquippedFahy: (fahyId: string | null) => Promise<void>;
 }
 
 const AppStateContext = createContext<AppState | undefined>(undefined);
@@ -41,6 +44,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [points, setPoints] = useState(0);
   const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
   const [equippedBadge, setEquippedBadge] = useState<string | null>(null);
+  const [equippedFahy, setEquippedFahy] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -50,6 +54,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setPoints(0);
       setUnlockedBadges([]);
       setEquippedBadge(null);
+      setEquippedFahy(null);
       return;
     }
 
@@ -62,6 +67,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setPoints(data.points || 0);
         setUnlockedBadges(data.badges || []);
         setEquippedBadge(data.equippedBadge || null);
+        setEquippedFahy(data.equippedFahy || null);
       }
     });
 
@@ -71,27 +77,35 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const addCoins = async (amount: number, reason?: string) => {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, { coins: coins + amount });
-    await addDoc(collection(db, "users", user.uid, "transactions"), {
-      amount,
-      type: "earn",
-      reason: reason || "Earned",
-      timestamp: serverTimestamp(),
-    });
+    try {
+      await updateDoc(userRef, { coins: coins + amount });
+      await addDoc(collection(db, "users", user.uid, "transactions"), {
+        amount,
+        type: "earn",
+        reason: reason || "Earned",
+        timestamp: serverTimestamp(),
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+    }
   };
 
   const deductCoins = async (amount: number, reason?: string) => {
     if (!user) return false;
     if (coins >= amount) {
       const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, { coins: coins - amount });
-      await addDoc(collection(db, "users", user.uid, "transactions"), {
-        amount: -amount,
-        type: "spend",
-        reason: reason || "Spent",
-        timestamp: serverTimestamp(),
-      });
-      return true;
+      try {
+        await updateDoc(userRef, { coins: coins - amount });
+        await addDoc(collection(db, "users", user.uid, "transactions"), {
+          amount: -amount,
+          type: "spend",
+          reason: reason || "Spent",
+          timestamp: serverTimestamp(),
+        });
+        return true;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+      }
     }
     return false;
   };
@@ -103,19 +117,41 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const newLevel = Math.floor(newXp / 100) + 1;
 
     const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, { xp: newXp, level: newLevel });
+    try {
+      await updateDoc(userRef, { xp: newXp, level: newLevel });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+    }
   };
 
   const addPoints = async (amount: number) => {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, { points: points + amount });
+    try {
+      await updateDoc(userRef, { points: points + amount });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+    }
   };
 
   const updateEquippedBadge = async (badgeKey: string | null) => {
     if (!user) return;
     const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, { equippedBadge: badgeKey });
+    try {
+      await updateDoc(userRef, { equippedBadge: badgeKey });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+    }
+  };
+
+  const updateEquippedFahy = async (fahyId: string | null) => {
+    if (!user) return;
+    const userRef = doc(db, "users", user.uid);
+    try {
+      await updateDoc(userRef, { equippedFahy: fahyId });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+    }
   };
 
   return (
@@ -127,11 +163,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         points,
         unlockedBadges,
         equippedBadge,
+        equippedFahy,
         addCoins,
         deductCoins,
         addXp,
         addPoints,
         setEquippedBadge: updateEquippedBadge,
+        setEquippedFahy: updateEquippedFahy,
       }}
     >
       {children}

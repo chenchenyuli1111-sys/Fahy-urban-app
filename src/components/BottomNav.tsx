@@ -14,7 +14,7 @@ export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { k } = useLang();
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-xl border-t border-black/5 px-2 pt-3 pb-6 flex justify-between items-center max-w-[480px] mx-auto">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-xl border-t border-black/5 px-2 pt-3 pb-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex justify-between items-center max-w-[480px] mx-auto">
       {items.map(({ to, key, Icon }) => {
         const active = pathname === to;
         return (
