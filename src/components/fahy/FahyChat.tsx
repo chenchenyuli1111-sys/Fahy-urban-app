@@ -10,6 +10,7 @@ import {
 import { PixelFahy } from "./PixelFahy";
 import { useLang } from "@/lib/i18n";
 import { chatWithFahyFn } from "@/lib/gemini";
+import { useDailyQuests } from "@/lib/DailyQuestContext";
 
 interface Message {
   role: "user" | "model";
@@ -19,6 +20,7 @@ interface Message {
 
 export function FahyChat() {
   const { k } = useLang();
+  const { updateQuestProgress } = useDailyQuests();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -51,6 +53,9 @@ export function FahyChat() {
     ];
     setMessages(newMessages);
     setLoading(true);
+
+    // Trigger daily quest progress
+    updateQuestProgress("quest_sanctuary_chat");
 
     try {
       // Map messages format expected by the API

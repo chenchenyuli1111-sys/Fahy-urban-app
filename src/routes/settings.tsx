@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { useLang, LANGUAGES } from "@/lib/i18n";
-import { Check, Globe, LogOut, User as UserIcon } from "lucide-react";
+import { Check, Globe, LogOut, User as UserIcon, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
+import { useAppState } from "@/lib/AppState";
 import { useState } from "react";
 import { toast } from "sonner";
+import { UserAvatar } from "@/components/UserAvatar";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/settings")({
 function Settings() {
   const { lang, setLang, k, formatCoins } = useLang();
   const { user, logout, updateProfileData } = useAuth();
+  const { level } = useAppState();
   const navigate = useNavigate();
   const [username, setUsername] = useState(user?.displayName || "");
   const [photoURL, setPhotoURL] = useState(user?.photoURL || "");
@@ -68,11 +71,38 @@ function Settings() {
             <div className="flex items-center gap-2 mb-4">
               <UserIcon className="w-4 h-4 text-peach" />
               <p className="text-[10px] uppercase tracking-widest font-bold text-forest/60">
-                Profile
+                Profile Avatar & Info
               </p>
             </div>
 
             <div className="space-y-4">
+              <div className="flex items-center gap-4 bg-surface p-3 rounded-2xl border border-black/5">
+                <UserAvatar
+                  photoURL={photoURL}
+                  name={username}
+                  level={level}
+                  size="lg"
+                  fallbackToFahy={true}
+                />
+                <div>
+                  <p className="font-bold text-sm text-forest">
+                    {username || "Explorer"}
+                  </p>
+                  <p className="text-xs text-forest/60">
+                    {photoURL ? "Custom Avatar" : "Pixel Fahy Mascot"}
+                  </p>
+                  {photoURL && (
+                    <button
+                      type="button"
+                      onClick={() => setPhotoURL("")}
+                      className="text-[11px] font-bold text-red-500 hover:underline mt-1 block"
+                    >
+                      Reset to Pixel Fahy Avatar
+                    </button>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-forest/70 mb-1">
                   Username
@@ -87,22 +117,22 @@ function Settings() {
 
               <div>
                 <label className="block text-xs font-bold text-forest/70 mb-1">
-                  Avatar URL
+                  Avatar Image URL (Optional)
                 </label>
                 <input
                   type="text"
                   value={photoURL}
                   onChange={(e) => setPhotoURL(e.target.value)}
                   className="w-full bg-surface border border-black/10 rounded-xl px-4 py-3 text-sm focus:outline-hidden focus:border-forest"
-                  placeholder="https://example.com/avatar.png"
+                  placeholder="Leave empty for Pixel Fahy Mascot"
                 />
               </div>
 
               <button
                 onClick={handleUpdateProfile}
-                className="w-full bg-peach text-white font-bold text-sm px-6 py-3 rounded-full active:scale-95 transition-transform"
+                className="w-full bg-peach text-white font-bold text-sm px-6 py-3 rounded-full active:scale-95 transition-transform flex items-center justify-center gap-2"
               >
-                Save Profile
+                <Sparkles className="w-4 h-4" /> Save Profile Changes
               </button>
             </div>
           </div>

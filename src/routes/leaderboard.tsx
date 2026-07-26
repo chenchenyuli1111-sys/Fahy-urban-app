@@ -1,10 +1,11 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { useLang } from "@/lib/i18n";
-import { Clock, ArrowLeft } from "lucide-react";
+import { Clock, ArrowLeft, Trophy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { fetchLeaderboard } from "@/lib/firestoreService";
+import { UserAvatar } from "@/components/UserAvatar";
 
 export const Route = createFileRoute("/leaderboard")({
   head: () => ({
@@ -130,26 +131,27 @@ function Leaderboard() {
               }`}
             >
               <div className="flex items-center gap-4">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-lg ${
-                    u.rank === 1
-                      ? "bg-fahy-yellow text-forest"
-                      : u.rank === 2
-                        ? "bg-slate-200 text-slate-700"
-                        : u.rank === 3
-                          ? "bg-peach text-forest"
-                          : "bg-forest/5 text-forest/50"
-                  }`}
-                >
-                  {u.photoURL ? (
-                    <img
-                      src={u.photoURL}
-                      alt={u.name}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    u.rank
-                  )}
+                <div className="relative">
+                  <UserAvatar
+                    photoURL={u.photoURL}
+                    name={u.name}
+                    level={u.level}
+                    size="md"
+                    className="shadow-sm border-2 border-white"
+                  />
+                  <div
+                    className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center font-display font-extrabold text-[10px] border border-white shadow-xs ${
+                      u.rank === 1
+                        ? "bg-fahy-yellow text-forest"
+                        : u.rank === 2
+                          ? "bg-slate-300 text-slate-800"
+                          : u.rank === 3
+                            ? "bg-peach text-forest"
+                            : "bg-forest/20 text-forest"
+                    }`}
+                  >
+                    {u.rank}
+                  </div>
                 </div>
                 <div className="flex flex-col">
                   <p

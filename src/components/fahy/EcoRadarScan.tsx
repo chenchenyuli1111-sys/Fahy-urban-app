@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAppState } from "@/lib/AppState";
+import { useDailyQuests } from "@/lib/DailyQuestContext";
 import { useLang } from "@/lib/i18n";
 import { updateMetrics } from "@/lib/firestoreService";
 import { analyzeImageFn, transcribeAudioFn } from "@/lib/gemini";
@@ -104,6 +105,7 @@ const LOCAL_SPECIES_POOL: DetectedTarget[] = [
 
 export function EcoRadarScan() {
   const { addCoins, addPoints, addXp } = useAppState();
+  const { updateQuestProgress } = useDailyQuests();
   const { formatCoins } = useLang();
 
   // Integrated Capture / Scan states
@@ -627,6 +629,7 @@ export function EcoRadarScan() {
             );
             addXp(20);
             addPoints(40);
+            updateQuestProgress("quest_scan_ecospot");
           }, 300);
         }
         return next;

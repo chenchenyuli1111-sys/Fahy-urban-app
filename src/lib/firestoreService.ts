@@ -385,9 +385,7 @@ export async function fetchUserProfile(
       badges: localState.badges ?? ["culture.badge.gen_0"],
       equippedBadge: localState.equippedBadge ?? "",
       equippedFahy: localState.equippedFahy ?? "",
-      photoURL:
-        guestUser.photoURL ||
-        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
+      photoURL: guestUser.photoURL || "",
       bio: localState.bio || "Fahy Explorer exploring urban ecology.",
       locationPreference: localState.locationPreference || "Fa Hui Park",
     };

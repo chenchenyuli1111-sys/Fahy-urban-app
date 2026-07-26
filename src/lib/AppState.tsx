@@ -16,6 +16,7 @@ import {
 import { auth, db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { handleFirestoreError, OperationType } from "./firestoreError";
+import { triggerLevelUpConfetti } from "./confettiUtils";
 
 interface AppState {
   coins: number;
@@ -180,6 +181,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const newXp = xp + amount;
     const newLevel = Math.floor(newXp / 100) + 1;
+
+    if (newLevel > level) {
+      triggerLevelUpConfetti(newLevel);
+    }
+
     setXp(newXp);
     setLevel(newLevel);
 

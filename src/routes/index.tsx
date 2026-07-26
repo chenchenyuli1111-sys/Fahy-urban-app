@@ -2,7 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { PixelFahy } from "@/components/fahy/PixelFahy";
-import { AlertTriangle } from "lucide-react";
+import { UserAvatar } from "@/components/UserAvatar";
+import { useAuth } from "@/lib/AuthContext";
+import {
+  AlertTriangle,
+  Sparkles,
+  Trophy,
+  Calendar,
+  MapPin,
+} from "lucide-react";
 import { useLang } from "@/lib/i18n";
 import { useAppState } from "@/lib/AppState";
 import { AchievementBadge } from "@/components/fahy/AchievementBadge";
@@ -36,6 +44,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { user } = useAuth();
   const { formatCoins, k } = useLang();
   const { coins, level, unlockedBadges, equippedBadge, equippedFahy } =
     useAppState();
@@ -52,6 +61,45 @@ function Index() {
   const [featuredWorkshop, setFeaturedWorkshop] = useState<Workshop | null>(
     null,
   );
+
+  const [userDistrict, setUserDistrict] = useState<string | null>(null);
+
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14`,
+              { headers: { "User-Agent": "FahyUrbanPulse/1.0" } },
+            );
+            if (response.ok) {
+              const data = await response.json();
+              const addr = data.address || {};
+              const districtName =
+                addr.suburb ||
+                addr.district ||
+                addr.city_district ||
+                addr.town ||
+                addr.village ||
+                addr.city ||
+                addr.county;
+              if (districtName) {
+                setUserDistrict(districtName);
+              }
+            }
+          } catch (e) {
+            console.warn("Could not reverse geocode coords:", e);
+          }
+        },
+        (err) => {
+          console.warn("Geolocation permission error or unavailable:", err);
+        },
+        { timeout: 8000, enableHighAccuracy: true },
+      );
+    }
+  }, []);
 
   useEffect(() => {
     // Subscribe to live neighborhood metrics
@@ -77,8 +125,9 @@ function Index() {
       <header className="px-5 pt-10 pb-6 bg-gradient-to-b from-peach/25 to-transparent relative">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-forest/50">
-              {k("home.district")}
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-forest/50 flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-emerald-600 animate-pulse" />
+              {userDistrict || k("home.district")}
             </p>
             <h1 className="font-display font-bold text-3xl tracking-tight leading-none mt-1">
               {k("app.name")}
@@ -89,7 +138,8 @@ function Index() {
           </div>
           <Link
             to="/dashboard"
-            className="relative w-16 h-16 bg-white rounded-2xl shadow-sm border border-peach/30 grid place-items-center active:scale-95 transition-transform"
+            aria-label="Profile Dashboard"
+            className="relative w-16 h-16 bg-white rounded-2xl shadow-sm border border-peach/30 grid place-items-center active:scale-95 transition-transform p-1"
           >
             {equippedBadge && (
               <AchievementBadge
@@ -99,10 +149,13 @@ function Index() {
                 className="absolute -top-1.5 -left-1.5 z-20 drop-shadow-md pointer-events-none"
               />
             )}
-            <PixelFahy
+            <UserAvatar
+              photoURL={user?.photoURL}
+              name={user?.displayName || "Explorer"}
               evolution={equippedFahy || undefined}
               level={level}
               size={56}
+              fallbackToFahy={true}
             />
             <div className="absolute -bottom-1 -right-1 bg-fahy-yellow text-[10px] px-1.5 py-0.5 rounded-full font-bold border-2 border-white">
               Lv. {level}

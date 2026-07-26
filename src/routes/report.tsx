@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { FahyGuide } from "@/components/fahy/FahyGuide";
 import { useLang, type DictKey } from "@/lib/i18n";
 import { useAppState } from "@/lib/AppState";
+import { useDailyQuests } from "@/lib/DailyQuestContext";
 import {
   Camera,
   MapPin,
@@ -120,6 +121,7 @@ function Report() {
   const [errorMsg, setErrorMsg] = useState("");
   const { formatCoins, k } = useLang();
   const { addCoins, addXp } = useAppState();
+  const { updateQuestProgress } = useDailyQuests();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleMapClick = (e: any) => {
@@ -246,6 +248,7 @@ function Report() {
       // Award real coins and XP
       addCoins(50, `Eco-Pin: ${finalIssueType}`);
       addXp(40);
+      updateQuestProgress("quest_report_issue");
 
       // Reset states
       setClickedLatLng(null);
@@ -320,6 +323,7 @@ function Report() {
 
         addCoins(50, `Eco-Report: ${verification.issueType}`);
         addXp(40);
+        updateQuestProgress("quest_report_issue");
 
         setErrorMsg("");
         setSubmitted(true);

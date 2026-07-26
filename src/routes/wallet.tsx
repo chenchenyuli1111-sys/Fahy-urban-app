@@ -16,7 +16,7 @@ import {
   limit,
   onSnapshot,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/AuthContext";
 import { QrCode, Sparkles, Leaf, Award } from "lucide-react";
 import { toast } from "sonner";
@@ -67,6 +67,29 @@ function Wallet() {
       setTxLoading(false);
       return;
     }
+
+    if (!auth.currentUser || user.uid.startsWith("guest_")) {
+      setTransactions([
+        {
+          id: "tx_1",
+          amount: 50,
+          reason: "Eco-Quest Completion Bonus",
+          type: "earned",
+          timestamp: null,
+        },
+        {
+          id: "tx_2",
+          amount: 30,
+          reason: "Artisan Path Badge Reward",
+          type: "earned",
+          timestamp: null,
+        },
+      ]);
+      setReportsCount(1);
+      setTxLoading(false);
+      return;
+    }
+
     setTxLoading(true);
     setTxError(null);
 

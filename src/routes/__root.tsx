@@ -15,6 +15,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { LanguageProvider } from "../lib/i18n";
 import { AppStateProvider } from "../lib/AppState";
 import { AuthProvider } from "../lib/AuthContext";
+import { DailyQuestProvider } from "../lib/DailyQuestContext";
+import { DailyQuestToast } from "../components/fahy/DailyQuestToast";
 
 function NotFoundComponent() {
   return (
@@ -165,10 +167,13 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppStateProvider>
-          <LanguageProvider>
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <Outlet />
-          </LanguageProvider>
+          <DailyQuestProvider>
+            <LanguageProvider>
+              <DailyQuestToast />
+              {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+              <Outlet />
+            </LanguageProvider>
+          </DailyQuestProvider>
         </AppStateProvider>
       </AuthProvider>
     </QueryClientProvider>

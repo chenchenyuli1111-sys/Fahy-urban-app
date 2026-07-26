@@ -37,6 +37,7 @@ const collection = Array.from({ length: 32 }).map((_, i) => ({
 
 function Ecosystem() {
   const { k } = useLang();
+  const { addCoins, addXp } = useAppState();
   const [showNodeSuccess, setShowNodeSuccess] = useState(false);
 
   const handleNodeClick = () => {
@@ -201,10 +202,14 @@ function Ecosystem() {
               bloomed! You earned a rare badge fragment.
             </p>
             <button
-              onClick={() => setShowNodeSuccess(false)}
-              className="bg-peach text-white font-bold text-sm px-6 py-2 rounded-full w-full cursor-pointer hover:bg-peach/90"
+              onClick={() => {
+                addCoins(30, "Special Node Found");
+                addXp(50);
+                setShowNodeSuccess(false);
+              }}
+              className="bg-peach text-white font-bold text-sm px-6 py-2.5 rounded-full w-full cursor-pointer hover:bg-peach/90 active:scale-95 transition-transform"
             >
-              Claim Reward
+              Claim +30 Coins & +50 XP
             </button>
           </div>
         </div>

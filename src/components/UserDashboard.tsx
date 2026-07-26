@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { useAppState } from "@/lib/AppState";
 import { useLang } from "@/lib/i18n";
+import { UserAvatar } from "@/components/UserAvatar";
 import {
   subscribeToUserProfile,
   updateUserProfile,
@@ -236,7 +237,7 @@ export function UserDashboard() {
         <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
           {/* Avatar Area with equipped badge ring and evolution */}
           <div className="relative flex-shrink-0 self-center">
-            <div className="w-24 h-24 bg-white rounded-2xl border-2 border-peach/40 shadow-sm flex items-center justify-center relative">
+            <div className="w-24 h-24 bg-white rounded-2xl border-2 border-peach/40 shadow-sm flex items-center justify-center relative p-1">
               {profile.equippedBadge && (
                 <AchievementBadge
                   badgeKey={profile.equippedBadge}
@@ -245,15 +246,14 @@ export function UserDashboard() {
                   className="absolute -top-3 -left-3 z-20 drop-shadow-md"
                 />
               )}
-              {profile.photoURL ? (
-                <img
-                  src={profile.photoURL}
-                  alt={profile.username}
-                  className="w-full h-full rounded-2xl object-cover"
-                />
-              ) : (
-                <PixelFahy evolution={currentStage.id} size={80} />
-              )}
+              <UserAvatar
+                photoURL={profile.photoURL}
+                name={profile.username}
+                evolution={currentStage.id}
+                level={profile.level}
+                size={88}
+                fallbackToFahy={true}
+              />
               <div className="absolute -bottom-2 -right-2 bg-fahy-yellow text-forest text-[11px] px-2 py-0.5 rounded-full font-extrabold border-2 border-white shadow-xs">
                 Lv. {profile.level}
               </div>

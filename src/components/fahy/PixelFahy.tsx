@@ -35,7 +35,7 @@ export function getEvolutionForLevel(level: number): FahyEvolution {
   return "sprout";
 }
 
-const EVOLUTION_IMAGES: Record<FahyEvolution, string> = {
+export const EVOLUTION_IMAGES: Record<FahyEvolution, string> = {
   sprout: sproutImg,
   potting_helper: pottingHelperImg,
   composter: composterImg,
@@ -48,11 +48,109 @@ const EVOLUTION_IMAGES: Record<FahyEvolution, string> = {
   ecosystem_guardian: ecosystemGuardianImg,
 };
 
+// Global transparent image cache
+const transparentImageCache = new Map<string, string>();
+
+/**
+ * Automatically removes white and near-white background pixels from a JPEG image source
+ * using HTML5 Canvas pixel manipulation, returning a clean transparent PNG data URL.
+ */
+export function getTransparentImage(imageSrc: string): Promise<string> {
+  if (!imageSrc) return Promise.resolve("");
+  if (transparentImageCache.has(imageSrc)) {
+    return Promise.resolve(transparentImageCache.get(imageSrc)!);
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    // Only set crossOrigin if external http/https URL
+    if (imageSrc.startsWith("http://") || imageSrc.startsWith("https://")) {
+      img.crossOrigin = "anonymous";
+    }
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(imageSrc);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, img.width, img.height);
+        const data = imgData.data;
+
+        // Threshold for white & off-white background removal
+        const whiteThreshold = 200;
+
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+
+          if (r > whiteThreshold && g > whiteThreshold && b > whiteThreshold) {
+            const avg = (r + g + b) / 3;
+            if (avg > 225) {
+              data[i + 3] = 0; // Completely transparent
+            } else {
+              // Smooth feathering at the edges
+              const alpha = Math.max(
+                0,
+                Math.floor(255 - (avg - whiteThreshold) * 10),
+              );
+              data[i + 3] = Math.min(data[i + 3], alpha);
+            }
+          }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+        const dataUrl = canvas.toDataURL("image/png");
+        transparentImageCache.set(imageSrc, dataUrl);
+        resolve(dataUrl);
+      } catch (err) {
+        console.warn("Failed to process transparent mascot image:", err);
+        resolve(imageSrc);
+      }
+    };
+
+    img.onerror = (err) => {
+      console.warn("Error loading image for transparent conversion:", err);
+      resolve(imageSrc);
+    };
+
+    img.src = imageSrc;
+  });
+}
+
+export function useTransparentMascot(rawSrc: string): string {
+  const [src, setSrc] = useState<string>(
+    transparentImageCache.get(rawSrc) || rawSrc,
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    if (rawSrc) {
+      getTransparentImage(rawSrc).then((processed) => {
+        if (isMounted) {
+          setSrc(processed);
+        }
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [rawSrc]);
+
+  return src;
+}
+
 export function PreloadFahyAssets() {
   useEffect(() => {
     Object.values(EVOLUTION_IMAGES).forEach((src) => {
-      const img = new Image();
-      img.src = src;
+      getTransparentImage(src);
     });
   }, []);
   return null;
@@ -73,7 +171,8 @@ export function PixelFahy({
 }) {
   const currentEvo =
     evolution || (level ? getEvolutionForLevel(level) : "sprout");
-  const imgSrc = EVOLUTION_IMAGES[currentEvo];
+  const rawSrc = EVOLUTION_IMAGES[currentEvo];
+  const transparentSrc = useTransparentMascot(rawSrc);
 
   const [isInteracting, setIsInteracting] = useState(false);
 
@@ -86,17 +185,17 @@ export function PixelFahy({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center bg-transparent transition-all duration-300 mix-blend-multiply ${interactive ? "cursor-pointer hover:scale-105" : ""} ${className} ${isInteracting ? "scale-95 -rotate-3" : ""}`}
-      style={{ width: size, height: size, mixBlendMode: "multiply" }}
+      className={`relative inline-flex items-center justify-center bg-transparent transition-all duration-300 ${interactive ? "cursor-pointer hover:scale-105" : ""} ${className} ${isInteracting ? "scale-95 -rotate-3" : ""}`}
+      style={{ width: size, height: size }}
       title={currentEvo.replace("_", " ").toUpperCase()}
       onClick={handleInteraction}
     >
       <img
-        src={imgSrc}
+        src={transparentSrc}
         alt={currentEvo}
         loading="lazy"
         decoding="async"
-        className="w-full h-full object-contain select-none pointer-events-none contrast-125 brightness-105"
+        className="w-full h-full object-contain select-none pointer-events-none drop-shadow-sm transition-opacity duration-200"
         style={{ backgroundColor: "transparent" }}
         draggable={false}
       />

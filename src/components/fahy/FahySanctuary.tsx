@@ -3,6 +3,7 @@ import { useAppState } from "@/lib/AppState";
 import { useAuth } from "@/lib/AuthContext";
 import { useLang } from "@/lib/i18n";
 import { PixelFahy } from "./PixelFahy";
+import { Fahy3DMascot } from "./Fahy3DMascot";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "motion/react";
@@ -339,8 +340,15 @@ interface CatchItem {
 
 export function FahySanctuary() {
   const { user } = useAuth();
-  const { coins, addCoins, deductCoins, addXp, addPoints, level } =
-    useAppState();
+  const {
+    coins,
+    addCoins,
+    deductCoins,
+    addXp,
+    addPoints,
+    level,
+    equippedFahy,
+  } = useAppState();
   const { formatCoins } = useLang();
 
   // Pet Stats
@@ -1232,352 +1240,19 @@ export function FahySanctuary() {
             )}
           </AnimatePresence>
 
-          {/* Fahy Avatar container with overlays */}
-          <div className="relative z-10 flex flex-col items-center justify-center">
-            {/* Fahy Bubble Pod - Solid white circular background to eliminate JPG square bounding box */}
-            <div className="bg-white/95 rounded-full w-36 h-36 flex items-center justify-center shadow-lg border-4 border-emerald-500/20 relative overflow-visible">
-              {/* Accessory Overlays container that animates everything together in perfect sync */}
-              <div
-                className={`relative w-28 h-28 flex items-center justify-center transition-all duration-300 ${
-                  isTickling
-                    ? "animate-wiggle scale-110"
-                    : musicPlaying
-                      ? "animate-bounce scale-105"
-                      : "animate-float"
-                }`}
-              >
-                {/* COMPANION SLOT */}
-                {equipped.companion && (
-                  <motion.div
-                    animate={{
-                      y: [0, -8, 0],
-                      rotate: [0, 4, 0],
-                    }}
-                    transition={{
-                      duration: 2.2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute -left-8 top-1/2 -translate-y-1/2 text-2xl select-none z-25 pointer-events-none filter drop-shadow-sm"
-                  >
-                    {equipped.companion === "baby_sprout" && "🌱"}
-                    {equipped.companion === "butterfly_pal" && "🦋"}
-                    {equipped.companion === "goldfish_pal" && "🐟"}
-                  </motion.div>
-                )}
-
-                <PixelFahy
-                  level={level}
-                  size={110}
-                  interactive={false}
-                  className="w-full h-full animate-none"
-                />
-
-                {/* HEAD OVERLAYS */}
-                {equipped.head === "straw_hat" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 left-1/2 -translate-x-1/2 pointer-events-none w-16 h-7 drop-shadow-md z-30"
-                  >
-                    <svg viewBox="0 0 100 40" className="w-full h-full">
-                      <path d="M10 25 C10 10, 90 10, 90 25 Z" fill="#E6C280" />
-                      <rect
-                        x="30"
-                        y="22"
-                        width="40"
-                        height="4"
-                        fill="#D4AF37"
-                      />
-                      <path
-                        d="M5 25 Q50 30, 95 25 Q50 35, 5 25"
-                        fill="#C5A059"
-                      />
-                    </svg>
-                  </motion.div>
-                )}
-
-                {equipped.head === "crown" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none w-10 h-8 drop-shadow-md z-30"
-                  >
-                    {/* Royal golden-jade crown SVG */}
-                    <svg viewBox="0 0 40 40" className="w-full h-full">
-                      <path
-                        d="M5 35 L5 15 L12 23 L20 10 L28 23 L35 15 L35 35 Z"
-                        fill="#FBBC05"
-                      />
-                      <rect x="5" y="32" width="30" height="4" fill="#10B981" />
-                      <circle cx="20" cy="10" r="2" fill="#EA4335" />
-                      <circle cx="5" cy="15" r="2" fill="#10B981" />
-                      <circle cx="35" cy="15" r="2" fill="#10B981" />
-                    </svg>
-                  </motion.div>
-                )}
-
-                {equipped.head === "camellia_crown" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 left-1/2 -translate-x-1/2 pointer-events-none w-16 h-5 drop-shadow-sm z-30 flex gap-0.5 justify-center items-center"
-                  >
-                    <span className="text-xs animate-pulse">🌸</span>
-                    <span className="text-[10px]">🍃</span>
-                    <span
-                      className="text-xs animate-pulse"
-                      style={{ animationDelay: "0.4s" }}
-                    >
-                      🌸
-                    </span>
-                  </motion.div>
-                )}
-
-                {equipped.head === "lion_head" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-4 left-1/2 -translate-x-1/2 pointer-events-none w-16 h-10 drop-shadow-lg z-30"
-                  >
-                    <span className="text-3xl">🦁</span>
-                  </motion.div>
-                )}
-
-                {equipped.head === "dimsum_basket" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-2 left-1/2 -translate-x-1/2 pointer-events-none w-12 h-6 drop-shadow-sm z-30"
-                  >
-                    {/* Steam basket hat */}
-                    <svg viewBox="0 0 50 30" className="w-full h-full">
-                      <ellipse cx="25" cy="18" rx="20" ry="8" fill="#D4B483" />
-                      <rect x="5" y="10" width="40" height="8" fill="#C2A173" />
-                      <ellipse cx="25" cy="10" rx="20" ry="6" fill="#D4B483" />
-                      <line
-                        x1="25"
-                        y1="4"
-                        x2="25"
-                        y2="8"
-                        stroke="#8E704C"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                  </motion.div>
-                )}
-
-                {/* FACE OVERLAYS */}
-                {equipped.face === "shades" && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute top-10 left-1/2 -translate-x-1/2 pointer-events-none w-12 h-4 z-30"
-                  >
-                    <div className="flex gap-1 justify-center">
-                      <div className="w-5 h-4 bg-slate-950 rounded-b-md border border-cyan-400" />
-                      <div className="w-1.5 h-0.5 bg-slate-900 mt-1.5" />
-                      <div className="w-5 h-4 bg-slate-950 rounded-b-md border border-cyan-400" />
-                    </div>
-                  </motion.div>
-                )}
-
-                {equipped.face === "blush" && (
-                  <div className="absolute top-[52px] inset-x-0 pointer-events-none z-28 flex justify-between px-6">
-                    <div className="w-3.5 h-1.5 bg-rose-400/50 rounded-full blur-xs" />
-                    <div className="w-3.5 h-1.5 bg-rose-400/50 rounded-full blur-xs" />
-                  </div>
-                )}
-
-                {equipped.face === "monocle" && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute top-10 left-[55%] pointer-events-none w-5 h-5 z-30"
-                  >
-                    <div className="w-4 h-4 border-2 border-amber-400 rounded-full bg-yellow-100/10" />
-                    <div className="w-0.5 h-4 bg-amber-400 rotate-12 ml-2 mt-0.5" />
-                  </motion.div>
-                )}
-
-                {/* BODY OVERLAYS */}
-                {equipped.body === "indigo_scarf" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none w-14 h-5 drop-shadow-sm z-25"
-                  >
-                    <svg viewBox="0 0 80 30" className="w-full h-full">
-                      <path
-                        d="M15 10 Q40 20, 65 10 Q40 5, 15 10"
-                        fill="#2E4A80"
-                        stroke="#1D2E54"
-                        strokeWidth="1"
-                      />
-                      <path d="M50 12 L55 25 L65 24 L58 10 Z" fill="#243C6B" />
-                      <path d="M25 12 L20 28 L12 26 L18 10 Z" fill="#243C6B" />
-                    </svg>
-                  </motion.div>
-                )}
-
-                {equipped.body === "tang_suit" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none w-12 h-6 z-25"
-                  >
-                    {/* Traditional Red Tang Suit SVG */}
-                    <svg viewBox="0 0 60 30" className="w-full h-full">
-                      <path d="M5 5 L55 5 L50 30 L10 30 Z" fill="#EA4335" />
-                      <line
-                        x1="30"
-                        y1="5"
-                        x2="30"
-                        y2="30"
-                        stroke="#FBBC05"
-                        strokeWidth="2"
-                      />
-                      {/* Frogs/Buttons */}
-                      <line
-                        x1="24"
-                        y1="12"
-                        x2="36"
-                        y2="12"
-                        stroke="#FBBC05"
-                        strokeWidth="1.5"
-                      />
-                      <line
-                        x1="24"
-                        y1="20"
-                        x2="36"
-                        y2="20"
-                        stroke="#FBBC05"
-                        strokeWidth="1.5"
-                      />
-                    </svg>
-                  </motion.div>
-                )}
-
-                {equipped.body === "royal_cape" && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none w-16 h-8 z-24"
-                  >
-                    <svg viewBox="0 0 80 40" className="w-full h-full">
-                      <path
-                        d="M10 5 Q40 0, 70 5 L80 40 Q40 30, 0 40 Z"
-                        fill="#FBBC05"
-                      />
-                      <rect
-                        x="25"
-                        y="2"
-                        width="30"
-                        height="4"
-                        fill="#D4AF37"
-                        rx="2"
-                      />
-                    </svg>
-                  </motion.div>
-                )}
-
-                {/* HAND/HOLDABLE PROPS */}
-                {equipped.hand === "lantern" && (
-                  <motion.div
-                    animate={{ rotate: [-4, 4, -4], y: [0, 1, 0] }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute -right-5 top-8 pointer-events-none w-6 h-10 drop-shadow-lg z-28 origin-top"
-                  >
-                    <svg viewBox="0 0 30 50" className="w-full h-full">
-                      <line
-                        x1="15"
-                        y1="0"
-                        x2="15"
-                        y2="12"
-                        stroke="#4A3B32"
-                        strokeWidth="2"
-                      />
-                      <rect
-                        x="5"
-                        y="12"
-                        width="20"
-                        height="26"
-                        rx="6"
-                        fill="#EA4335"
-                      />
-                      <rect
-                        x="9"
-                        y="15"
-                        width="12"
-                        height="20"
-                        rx="3"
-                        fill="#FBBC05"
-                        opacity="0.8"
-                      />
-                      <rect x="8" y="10" width="14" height="2" fill="#4A3B32" />
-                      <rect x="8" y="38" width="14" height="2" fill="#4A3B32" />
-                      <line
-                        x1="15"
-                        y1="40"
-                        x2="15"
-                        y2="48"
-                        stroke="#EA4335"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                  </motion.div>
-                )}
-
-                {equipped.hand === "peach_blossom" && (
-                  <motion.div
-                    animate={{ rotate: [-3, 3, -3] }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute -right-6 top-8 pointer-events-none w-6 h-8 z-28 origin-bottom-left text-xl select-none"
-                  >
-                    🎋
-                  </motion.div>
-                )}
-
-                {equipped.hand === "tea_cup" && (
-                  <motion.div
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute -right-5 bottom-4 pointer-events-none w-6 h-6 z-28 text-sm select-none"
-                  >
-                    🍵
-                    <div className="absolute -top-1.5 left-1 text-[8px] animate-pulse">
-                      💨
-                    </div>
-                  </motion.div>
-                )}
-
-                {equipped.hand === "calligraphy_brush" && (
-                  <motion.div
-                    animate={{ rotate: [-6, 6, -6] }}
-                    transition={{
-                      duration: 2.5,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                    className="absolute -right-4 bottom-2 pointer-events-none w-5 h-10 z-28 text-xl select-none origin-bottom"
-                  >
-                    🖌️
-                  </motion.div>
-                )}
-              </div>
-            </div>
+          {/* 3D Interactive Mascot Stage & Wardrobe */}
+          <div className="relative z-10 flex flex-col items-center justify-center w-full">
+            <Fahy3DMascot
+              level={level}
+              evolution={equippedFahy as any}
+              equipped={equipped as any}
+              size={180}
+              interactive3D={true}
+              showDressUpBar={true}
+              onEquipChange={(slot, itemId) =>
+                handleEquipAccessory(slot as any, itemId || null)
+              }
+            />
 
             <div className="flex gap-2 mt-4">
               <button

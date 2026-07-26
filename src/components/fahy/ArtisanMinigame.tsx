@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAppState } from "@/lib/AppState";
+import { useDailyQuests } from "@/lib/DailyQuestContext";
 import { useLang } from "@/lib/i18n";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -34,6 +35,7 @@ export function ArtisanMinigame({
   onClose,
 }: ArtisanMinigameProps) {
   const { addCoins, addPoints, addXp } = useAppState();
+  const { updateQuestProgress } = useDailyQuests();
   const { formatCoins } = useLang();
 
   // Mini-game states
@@ -210,6 +212,7 @@ export function ArtisanMinigame({
     addCoins(coinsReward, `Completed Craft Game: ${badgeName}`);
     addPoints(pointsReward);
     addXp(xpReward);
+    updateQuestProgress("quest_artisan_discover");
     onSuccess(badgeKey);
   };
 

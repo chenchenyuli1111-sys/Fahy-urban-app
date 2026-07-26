@@ -1,9 +1,11 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { ArrowLeft, Star, Lock, Check } from "lucide-react";
+import { ArrowLeft, Star, Lock, Check, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { PixelFahy, type FahyEvolution } from "@/components/fahy/PixelFahy";
+import { Fahy3DMascot } from "@/components/fahy/Fahy3DMascot";
 import { useAppState } from "@/lib/AppState";
+import { useDailyQuests } from "@/lib/DailyQuestContext";
 
 export const Route = createFileRoute("/evolution")({
   head: () => ({
@@ -28,7 +30,8 @@ const stages: { level: number; id: FahyEvolution; name: string }[] = [
 function EvolutionPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const { level, xp, equippedFahy, setEquippedFahy } = useAppState();
+  const { level, xp, addXp, equippedFahy, setEquippedFahy } = useAppState();
+  const { updateQuestProgress } = useDailyQuests();
 
   const currentStage =
     stages.find((s) => s.id === equippedFahy) ||
@@ -67,8 +70,14 @@ function EvolutionPage() {
               Level {level}
             </div>
 
-            <div className="relative w-48 h-48 flex items-center justify-center mb-6 animate-float">
-              <PixelFahy evolution={currentStage.id} size={160} />
+            <div className="relative my-2">
+              <Fahy3DMascot
+                evolution={currentStage.id}
+                level={level}
+                size={160}
+                interactive3D={true}
+                showDressUpBar={false}
+              />
             </div>
 
             <h2 className="font-display font-bold text-2xl text-forest text-center">
@@ -91,6 +100,17 @@ function EvolutionPage() {
                   Next form unlocks at Level {nextStage.level}
                 </p>
               )}
+
+              <button
+                onClick={() => {
+                  addXp(100);
+                  updateQuestProgress("quest_feed_fahy");
+                }}
+                className="mt-4 w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-xs rounded-2xl shadow-md hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-yellow-300 animate-pulse" />
+                Train Fahy (+100 XP / Level Up)
+              </button>
             </div>
           </div>
         </section>
